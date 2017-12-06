@@ -35,6 +35,7 @@ func main() {
 	w.Dispatch(func() {
 
 		// Register ui libraries here (js + css)
+		w.InjectCSS(string(MustAsset("lib/bootstrap/bootstrap.min.css")))
 		w.Eval(string(MustAsset("lib/vue/vue.js")))
 
 		// Register application specific css assets here
