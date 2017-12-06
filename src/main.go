@@ -34,7 +34,6 @@ func (c *Counter) Reset() {
 }
 
 var webviewTask = make(chan interface{})
-var fileServerTask = make(chan interface{})
 
 func main() {
 	//Hack to keep the dependency github.com/jteeuwen/go-bindata in vendor folder
@@ -43,20 +42,17 @@ func main() {
 	if len(os.Args) >= 2 && os.Args[1] == "debug" {
 		go func() {
 			launchFileServer()
-			close(fileServerTask)
 		}()
+
+		go func() {
+			launchWebview()
+			close(webviewTask)
+		}()
+
+		<-webviewTask
 	} else {
-		close(fileServerTask)
-	}
-
-	go func() {
 		launchWebview()
-		close(fileServerTask)
-		close(webviewTask)
-	}()
-
-	<-fileServerTask
-	<-webviewTask
+	}
 }
 
 func launchWebview() {
