@@ -33,16 +33,17 @@ func main() {
 	defer w.Exit()
 
 	w.Dispatch(func() {
-		// Inject controller
-		w.Bind("counter", &Counter{})
 
-		// Inject CSS
-		w.InjectCSS(string(MustAsset("src/ui/styles.css")))
-
-		// Inject VueJS
+		// Register ui libraries here (js + css)
 		w.Eval(string(MustAsset("lib/vue/vue.js")))
 
-		// Inject app code
+		// Register application specific css assets here
+		w.InjectCSS(string(MustAsset("src/ui/styles.css")))
+
+		// Register application specific utils here
+		w.Bind("counter", &Counter{})
+
+		// Register application specific initialization module last
 		w.Eval(string(MustAsset("src/ui/app.js")))
 	})
 	w.Run()
