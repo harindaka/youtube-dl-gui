@@ -48,12 +48,4 @@ func main() {
 		w.Eval(string(MustAsset("src/ui/app.js")))
 	})
 	w.Run()
-
-	fmt.Println("Hello")
-	asset, err := Asset("src/ui/app.js")
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(asset))
 }
