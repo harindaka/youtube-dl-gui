@@ -1,3 +1,3 @@
 @echo off
 call build.bat || exit /b
-.\bin\youtube-dl-gui.exe || exit /b
+.\bin\youtube-dl-gui.exe debug  || exit /b

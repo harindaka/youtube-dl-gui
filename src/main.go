@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"os"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 	bindata "github.com/jteeuwen/go-bindata"
@@ -32,29 +33,33 @@ func (c *Counter) Reset() {
 	c.Value = 0
 }
 
+var webviewTask = make(chan interface{})
+var fileServerTask = make(chan interface{})
+
 func main() {
 	//Hack to keep the dependency github.com/jteeuwen/go-bindata in vendor folder
 	var _ = bindata.NewConfig
 
+	if len(os.Args) >= 2 && os.Args[1] == "debug" {
+		go func() {
+			launchFileServer()
+			close(fileServerTask)
+		}()
+	} else {
+		close(fileServerTask)
+	}
+
 	go func() {
-
-		http.Handle("/",
-			http.FileServer(
-				&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo}))
-
-		http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
-		})
-
-		fmt.Println("Starting http server...")
-		err := http.ListenAndServe(":9090", nil) // set listen port
-		if err != nil {
-			fmt.Println("ListenAndServe:", err)
-		} else {
-			fmt.Println("Http server started.")
-		}
+		launchWebview()
+		close(fileServerTask)
+		close(webviewTask)
 	}()
 
+	<-fileServerTask
+	<-webviewTask
+}
+
+func launchWebview() {
 	w := webview.New(webview.Settings{
 		Title: "Click counter: ", // + uiFrameworkName,
 	})
@@ -76,5 +81,22 @@ func main() {
 		w.Eval(string(MustAsset("src/ui/app.js")))
 	})
 	w.Run()
+}
 
+func launchFileServer() {
+	http.Handle("/",
+		http.FileServer(
+			&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo}))
+
+	http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+	})
+
+	fmt.Println("Starting http server...")
+	err := http.ListenAndServe(":9090", nil) // set listen port
+	if err != nil {
+		fmt.Println("ListenAndServe:", err)
+	} else {
+		fmt.Println("Http server started.")
+	}
 }
