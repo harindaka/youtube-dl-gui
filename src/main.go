@@ -3,9 +3,9 @@ package main
 //import "github.com/zserge/webview"
 import (
 	"fmt"
-	"html"
 	"net/http"
 	"os"
+	"strconv"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 	bindata "github.com/jteeuwen/go-bindata"
@@ -34,14 +34,33 @@ func (c *Counter) Reset() {
 }
 
 var webviewTask = make(chan interface{})
+var isDebugging = false
 
 func main() {
 	//Hack to keep the dependency github.com/jteeuwen/go-bindata in vendor folder
 	var _ = bindata.NewConfig
 
 	if len(os.Args) >= 2 && os.Args[1] == "debug" {
+		isDebugging = true
+	}
+
+	var fileServerPort uint
+	fileServerPort = 3030
+
+	if isDebugging && len(os.Args) >= 3 {
+		fileServerPortStr := os.Args[2]
+		port, err := strconv.ParseUint(fileServerPortStr, 0, 64)
+		if err != nil || port < 0 || port > 65535 {
+			panic(fmt.Sprintf("Invalid file server port specified %s", fileServerPortStr))
+		}
+
+		fileServerPort = uint(port)
+	}
+
+	if len(os.Args) >= 2 && os.Args[1] == "debug" {
+
 		go func() {
-			launchFileServer()
+			launchFileServer(fileServerPort)
 		}()
 
 		go func() {
@@ -57,11 +76,19 @@ func main() {
 
 func launchWebview() {
 	w := webview.New(webview.Settings{
-		Title: "Click counter: ", // + uiFrameworkName,
+		Title:     "Youtube Downloader", // + uiFrameworkName,
+		Resizable: true,
+		Debug:     isDebugging,
+		Height:    768,
+		Width:     1024,
 	})
 	defer w.Exit()
 
 	w.Dispatch(func() {
+
+		if isDebugging {
+			w.Eval(string(MustAsset("lib/firebuglite/firebuglite.js")))
+		}
 
 		// Register ui libraries here (js + css)
 		w.InjectCSS(string(MustAsset("lib/bootstrap/bootstrap.min.css")))
@@ -79,20 +106,19 @@ func launchWebview() {
 	w.Run()
 }
 
-func launchFileServer() {
+func launchFileServer(port uint) {
 	http.Handle("/",
 		http.FileServer(
 			&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo}))
 
-	http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+	http.HandleFunc("/debug", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/src/ui/debug.html", 302)
 	})
 
-	fmt.Println("Starting http server...")
-	err := http.ListenAndServe(":9090", nil) // set listen port
+	fileServerHostAddress := fmt.Sprintf(":%d", port)
+	fmt.Printf("File server listening on http://localhost%s", fileServerHostAddress)
+	err := http.ListenAndServe(fileServerHostAddress, nil) // set listen port
 	if err != nil {
-		fmt.Println("ListenAndServe:", err)
-	} else {
-		fmt.Println("Http server started.")
+		fmt.Printf("Unable to start file server due to error: %s", err)
 	}
 }
