@@ -1,6 +1,11 @@
 package main
 
-import "github.com/zserge/webview"
+//import "github.com/zserge/webview"
+import (
+	"fmt"
+
+	"github.com/zserge/webview"
+)
 
 // func main() {
 // 	// Open wikipedia in a 800x600 resizable window
@@ -25,7 +30,7 @@ func (c *Counter) Reset() {
 
 func main() {
 	w := webview.New(webview.Settings{
-		Title: "Click counter: " + uiFrameworkName,
+		Title: "Click counter: ", // + uiFrameworkName,
 	})
 	defer w.Exit()
 
@@ -34,10 +39,21 @@ func main() {
 		w.Bind("counter", &Counter{})
 
 		// Inject CSS
-		w.InjectCSS(string(MustAsset("js/styles.css")))
+		w.InjectCSS(string(MustAsset("src/ui/styles.css")))
 
-		// Inject web UI framework and app UI code
-		loadUIFramework(w)
+		// Inject VueJS
+		w.Eval(string(MustAsset("lib/vue/vue.js")))
+
+		// Inject app code
+		w.Eval(string(MustAsset("src/ui/app.js")))
 	})
 	w.Run()
+
+	fmt.Println("Hello")
+	asset, err := Asset("src/ui/app.js")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(asset))
 }

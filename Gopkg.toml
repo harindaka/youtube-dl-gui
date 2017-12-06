@@ -23,3 +23,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/zserge/webview"
+
+[[constraint]]
+  name = "github.com/jteeuwen/go-bindata"
+  version = "3.0.7"

@@ -12,7 +12,9 @@ var uiFrameworkName = "VueJS"
 
 func loadUIFramework(w webview.WebView) {
 	// Inject Vue.js
-	w.Eval(string(MustAsset("js/vue/vendor/vue.min.js")))
+	//w.Eval(string(MustAsset("js/vue/vendor/vue.min.js")))
+	w.Eval(jsVue)
 	// Inject app code
-	w.Eval(string(MustAsset("js/vue/app.js")))
+	//w.Eval(string(MustAsset("js/vue/app.js")))
+	w.Eval(jsApp)
 }

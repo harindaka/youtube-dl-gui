@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/jteeuwen/go-bindata"
+  packages = ["."]
+  revision = "bbd0c6e271208dce66d8fda4bc536453cd27fc4a"
+  version = "v3.0.7"
+
+[[projects]]
   branch = "master"
   name = "github.com/zserge/webview"
   packages = ["."]
@@ -10,6 +16,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "eca7c7a3b94cc7f3eb39bf0902b841e3559bb29e8869386d912d9dba9143a82e"
+  inputs-digest = "f6d5bc154c647041f3b1d47fdc365692d016246e006397380453b10cc6aabe9e"
   solver-name = "gps-cdcl"
   solver-version = 1
