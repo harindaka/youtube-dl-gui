@@ -2,8 +2,6 @@ package main
 
 //import "github.com/zserge/webview"
 import (
-	"fmt"
-
 	"github.com/zserge/webview"
 )
 
