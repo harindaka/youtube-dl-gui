@@ -35,6 +35,7 @@ func (c *Counter) Reset() {
 
 var webviewTask = make(chan interface{})
 var isDebugging = false
+var am = newAssetManager()
 
 func main() {
 	//Hack to keep the dependency github.com/jteeuwen/go-bindata in vendor folder
@@ -86,22 +87,22 @@ func launchWebview() {
 
 	w.Dispatch(func() {
 
-		if isDebugging {
-			w.Eval(string(MustAsset("lib/firebuglite/firebuglite.js")))
-		}
-
 		// Register ui libraries here (js + css)
-		w.InjectCSS(string(MustAsset("lib/bootstrap/bootstrap.min.css")))
-		w.Eval(string(MustAsset("lib/vue/vue.js")))
+		//w.InjectCSS(string(MustAsset("lib/bootstrap/bootstrap.min.css")))
+		am.addCSS(w, "lib/bootstrap/bootstrap.min.css")
+		//w.Eval(string(MustAsset("lib/vue/vue.js")))
+		am.addJS(w, "lib/vue/vue.js")
 
 		// Register application specific css assets here
-		w.InjectCSS(string(MustAsset("src/ui/styles.css")))
+		//w.InjectCSS(string(MustAsset("src/ui/styles.css")))
+		am.addCSS(w, "src/ui/styles.css")
 
 		// Register application specific utils here
 		w.Bind("counter", &Counter{})
 
 		// Register application specific initialization module last
-		w.Eval(string(MustAsset("src/ui/app.js")))
+		//w.Eval(string(MustAsset("src/ui/app.js")))
+		am.addJS(w, "src/ui/app.js")
 	})
 	w.Run()
 }
