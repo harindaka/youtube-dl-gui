@@ -7,7 +7,7 @@ var vm = new Vue({
   methods: {
     increment: function() { 
       counter.add(1); 
-      this.counterVal = counter.Value;
+      this.counterVal = counter.value;
     },
   }
 });

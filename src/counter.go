@@ -2,7 +2,7 @@ package main
 
 //Counter plugin
 type Counter struct {
-	Value uint
+	Value uint `json:"value"`
 }
 
 //NewCounter creates a new Counter plugin
