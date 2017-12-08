@@ -2,17 +2,17 @@ package main
 
 //Counter plugin
 type Counter struct {
-	value uint
+	Value uint
 }
 
 //NewCounter creates a new Counter plugin
 func NewCounter() Counter {
 	return Counter{
-		value: 0,
+		Value: 0,
 	}
 }
 
 //Add increments value
 func (c *Counter) Add(value uint) {
-	c.value += value
+	c.Value += value
 }
