@@ -12,12 +12,6 @@ import (
 	"github.com/zserge/webview"
 )
 
-// func main() {
-// 	// Open wikipedia in a 800x600 resizable window
-// 	webview.Open("Minimal webview example",
-// 		"https://en.m.wikipedia.org/wiki/Main_Page", 800, 600, true)
-// }
-
 // Counter is a simple example of automatic Go-to-JS data binding
 type Counter struct {
 	Value int `json:"value"`
@@ -89,20 +83,20 @@ func launchWebview() {
 
 		// Register ui libraries here (js + css)
 		//w.InjectCSS(string(MustAsset("lib/bootstrap/bootstrap.min.css")))
-		am.addCSS(w, "lib/bootstrap/bootstrap.min.css")
+		am.addAsset(w, "lib/bootstrap/bootstrap.min.css", AssetTypeCSS)
 		//w.Eval(string(MustAsset("lib/vue/vue.js")))
-		am.addJS(w, "lib/vue/vue.js")
+		am.addAsset(w, "lib/vue/vue.js", AssetTypeJS)
 
 		// Register application specific css assets here
 		//w.InjectCSS(string(MustAsset("src/ui/styles.css")))
-		am.addCSS(w, "src/ui/styles.css")
+		am.addAsset(w, "src/ui/styles.css", AssetTypeCSS)
 
 		// Register application specific utils here
 		w.Bind("counter", &Counter{})
 
 		// Register application specific initialization module last
 		//w.Eval(string(MustAsset("src/ui/app.js")))
-		am.addJS(w, "src/ui/app.js")
+		am.addAsset(w, "src/ui/app.js", AssetTypeJS)
 	})
 	w.Run()
 }
@@ -113,11 +107,28 @@ func launchFileServer(port uint) {
 			&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo}))
 
 	http.HandleFunc("/debug", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/src/ui/debug.html", 302)
+		w.Write([]byte("<!DOCTYPE html>\n"))
+		w.Write([]byte("<html>\n"))
+		w.Write([]byte("<head>\n"))
+
+		am.forEachAsset(func(assetPath string, assetType string) {
+			markup := fmt.Sprintf(assetType, assetPath)
+			markup = fmt.Sprintf("%s\n", markup)
+			w.Write([]byte(markup))
+		})
+
+		w.Write([]byte("<title>Page Title</title>\n"))
+		w.Write([]byte("</head>\n"))
+		w.Write([]byte("<body>\n"))
+		w.Write([]byte("<div id=\"app\"></div>\n"))
+		w.Write([]byte("</body>\n"))
+		w.Write([]byte("</html>"))
+
+		//w.WriteHeader(http.StatusOK)
 	})
 
 	fileServerHostAddress := fmt.Sprintf(":%d", port)
-	fmt.Printf("File server listening on http://localhost%s", fileServerHostAddress)
+	fmt.Printf("Debug server listening on http://localhost%s%s", fileServerHostAddress, URLPathDebug)
 	err := http.ListenAndServe(fileServerHostAddress, nil) // set listen port
 	if err != nil {
 		fmt.Printf("Unable to start file server due to error: %s", err)

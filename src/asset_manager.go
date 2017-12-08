@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/zserge/webview"
 )
 
 type assetManager struct {
-	assets map[string]string
+	assets      map[string]string
+	assetsIndex []string
 }
 
 func newAssetManager() assetManager {
@@ -14,12 +17,23 @@ func newAssetManager() assetManager {
 	}
 }
 
-func (am *assetManager) addCSS(w webview.WebView, assetPath string) {
-	w.InjectCSS(string(MustAsset(assetPath)))
-	am.assets[assetPath] = AssetTypeCSS
+func (am *assetManager) addAsset(w webview.WebView, assetPath string, assetType string) {
+	switch assetType {
+	case AssetTypeJS:
+		w.Eval(string(MustAsset(assetPath)))
+	case AssetTypeCSS:
+		w.InjectCSS(string(MustAsset(assetPath)))
+	default:
+		panic(fmt.Sprintf("Unsupported asset type specified: %s", assetType))
+	}
+
+	am.assets[assetPath] = assetType
+	am.assetsIndex = append(am.assetsIndex, assetPath)
 }
 
-func (am *assetManager) addJS(w webview.WebView, assetPath string) {
-	w.Eval(string(MustAsset(assetPath)))
-	am.assets[assetPath] = AssetTypeJS
+func (am *assetManager) forEachAsset(f func(string, string)) {
+	for _, assetPath := range am.assetsIndex {
+		assetType := am.assets[assetPath]
+		f(assetPath, assetType)
+	}
 }
