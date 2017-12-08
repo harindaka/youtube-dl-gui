@@ -7,17 +7,21 @@ import (
 )
 
 type assetManager struct {
-	assets      map[string]string
-	assetsIndex []string
+	prependAssets      map[string]string
+	prependAssetsIndex []string
+
+	appendAssets      map[string]string
+	appendAssetsIndex []string
 }
 
 func newAssetManager() assetManager {
 	return assetManager{
-		assets: make(map[string]string),
+		prependAssets: make(map[string]string),
+		appendAssets:  make(map[string]string),
 	}
 }
 
-func (am *assetManager) addAsset(w webview.WebView, assetPath string, assetType string) {
+func (am *assetManager) prependAsset(w webview.WebView, assetPath string, assetType string) {
 	switch assetType {
 	case AssetTypeJS:
 		w.Eval(string(MustAsset(assetPath)))
@@ -27,13 +31,34 @@ func (am *assetManager) addAsset(w webview.WebView, assetPath string, assetType 
 		panic(fmt.Sprintf("Unsupported asset type specified: %s", assetType))
 	}
 
-	am.assets[assetPath] = assetType
-	am.assetsIndex = append(am.assetsIndex, assetPath)
+	am.prependAssets[assetPath] = assetType
+	am.prependAssetsIndex = append(am.prependAssetsIndex, assetPath)
 }
 
-func (am *assetManager) forEachAsset(f func(string, string)) {
-	for _, assetPath := range am.assetsIndex {
-		assetType := am.assets[assetPath]
+func (am *assetManager) appendAsset(w webview.WebView, assetPath string, assetType string) {
+	switch assetType {
+	case AssetTypeJS:
+		w.Eval(string(MustAsset(assetPath)))
+	case AssetTypeCSS:
+		w.InjectCSS(string(MustAsset(assetPath)))
+	default:
+		panic(fmt.Sprintf("Unsupported asset type specified: %s", assetType))
+	}
+
+	am.appendAssets[assetPath] = assetType
+	am.appendAssetsIndex = append(am.appendAssetsIndex, assetPath)
+}
+
+func (am *assetManager) forEachPrependAsset(f func(string, string)) {
+	for _, assetPath := range am.prependAssetsIndex {
+		assetType := am.prependAssets[assetPath]
+		f(assetPath, assetType)
+	}
+}
+
+func (am *assetManager) forEachAppendAsset(f func(string, string)) {
+	for _, assetPath := range am.appendAssetsIndex {
+		assetType := am.appendAssets[assetPath]
 		f(assetPath, assetType)
 	}
 }

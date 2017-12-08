@@ -8,28 +8,15 @@ import (
 	"strconv"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
+	"github.com/harindaka/youtube-dl-gui/src/plugins"
 	bindata "github.com/jteeuwen/go-bindata"
 	"github.com/zserge/webview"
 )
 
-// Counter is a simple example of automatic Go-to-JS data binding
-type Counter struct {
-	Value int `json:"value"`
-}
-
-// Add increases the value of a counter by n
-func (c *Counter) Add(n int) {
-	c.Value = c.Value + int(n)
-}
-
-// Reset sets the value of a counter back to zero
-func (c *Counter) Reset() {
-	c.Value = 0
-}
-
 var webviewTask = make(chan interface{})
 var isDebugging = false
 var am = newAssetManager()
+var w webview.WebView
 
 func main() {
 	//Hack to keep the dependency github.com/jteeuwen/go-bindata in vendor folder
@@ -70,7 +57,7 @@ func main() {
 }
 
 func launchWebview() {
-	w := webview.New(webview.Settings{
+	w = webview.New(webview.Settings{
 		Title:     "Youtube Downloader", // + uiFrameworkName,
 		Resizable: true,
 		Debug:     isDebugging,
@@ -83,20 +70,22 @@ func launchWebview() {
 
 		// Register ui libraries here (js + css)
 		//w.InjectCSS(string(MustAsset("lib/bootstrap/bootstrap.min.css")))
-		am.addAsset(w, "lib/bootstrap/bootstrap.min.css", AssetTypeCSS)
+		am.prependAsset(w, "lib/bootstrap/bootstrap.min.css", AssetTypeCSS)
 		//w.Eval(string(MustAsset("lib/vue/vue.js")))
-		am.addAsset(w, "lib/vue/vue.js", AssetTypeJS)
+		am.prependAsset(w, "lib/vue/vue.js", AssetTypeJS)
 
 		// Register application specific css assets here
 		//w.InjectCSS(string(MustAsset("src/ui/styles.css")))
-		am.addAsset(w, "src/ui/styles.css", AssetTypeCSS)
+		am.prependAsset(w, "src/ui/styles.css", AssetTypeCSS)
 
 		// Register application specific utils here
-		w.Bind("counter", &Counter{})
+		//w.Bind("counter", &Counter{})
+		//counter := plugins.NewCounter()
+		w.Bind("counter", &plugins.Counter{})
 
 		// Register application specific initialization module last
 		//w.Eval(string(MustAsset("src/ui/app.js")))
-		am.addAsset(w, "src/ui/app.js", AssetTypeJS)
+		am.appendAsset(w, "src/ui/app.js", AssetTypeJS)
 	})
 	w.Run()
 }
@@ -111,7 +100,7 @@ func launchFileServer(port uint) {
 		w.Write([]byte("<html>\n"))
 		w.Write([]byte("<head>\n"))
 
-		am.forEachAsset(func(assetPath string, assetType string) {
+		am.forEachPrependAsset(func(assetPath string, assetType string) {
 			markup := fmt.Sprintf(assetType, assetPath)
 			markup = fmt.Sprintf("%s\n", markup)
 			w.Write([]byte(markup))
@@ -121,6 +110,13 @@ func launchFileServer(port uint) {
 		w.Write([]byte("</head>\n"))
 		w.Write([]byte("<body>\n"))
 		w.Write([]byte("<div id=\"app\"></div>\n"))
+
+		am.forEachAppendAsset(func(assetPath string, assetType string) {
+			markup := fmt.Sprintf(assetType, assetPath)
+			markup = fmt.Sprintf("%s\n", markup)
+			w.Write([]byte(markup))
+		})
+
 		w.Write([]byte("</body>\n"))
 		w.Write([]byte("</html>"))
 
@@ -134,3 +130,7 @@ func launchFileServer(port uint) {
 		fmt.Printf("Unable to start file server due to error: %s", err)
 	}
 }
+
+// func registerPlugin(pluginVar string, plugin interface{}) {
+// 	w.Bind(pluginVar, &plugin)
+// }
