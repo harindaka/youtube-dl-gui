@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
-	"github.com/harindaka/youtube-dl-gui/src/plugins"
 	bindata "github.com/jteeuwen/go-bindata"
 	"github.com/zserge/webview"
 )
@@ -81,7 +80,7 @@ func launchWebview() {
 		// Register application specific utils here
 		//w.Bind("counter", &Counter{})
 		//counter := plugins.NewCounter()
-		w.Bind("counter", &plugins.Counter{})
+		w.Bind("counter", &Counter{})
 
 		// Register application specific initialization module last
 		//w.Eval(string(MustAsset("src/ui/app.js")))

@@ -1,4 +1,4 @@
-package plugins
+package main
 
 //Counter plugin
 type Counter struct {

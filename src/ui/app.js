@@ -1,11 +1,6 @@
 var vm = new Vue({
   el: '#app',
-  template: `
-    <div>
-      <div class="counter">{{ counterVal }}</div>
-      <button class="btn btn-primary" v-on:click="increment">Increment</button>
-    </div>
-  `,
+  template: '<div><div class="counter">{{ counterVal }}</div><button class="btn btn-primary" v-on:click="increment">Increment</button></div>',
   data: {
     counterVal: 0
   },
@@ -14,5 +9,5 @@ var vm = new Vue({
       counter.add(1); 
       this.counterVal = counter.value;
     },
-  },
+  }
 });
