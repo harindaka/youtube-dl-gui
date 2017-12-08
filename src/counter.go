@@ -12,6 +12,7 @@ func NewCounter() Counter {
 	}
 }
 
-func (c *Counter) add(value uint) {
+//Add increments value
+func (c *Counter) Add(value uint) {
 	c.value += value
 }
