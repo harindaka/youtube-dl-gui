@@ -6,8 +6,8 @@ var vm = new Vue({
   },
   methods: {
     increment: function() { 
-      counter.add(1); 
-      this.counterVal = counter.data.value;
+      this.counterVal = native.add(this.counterVal, 1);             
+      alert(this.counterVal);
     },
   }
 });

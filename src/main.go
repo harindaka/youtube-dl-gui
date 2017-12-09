@@ -80,7 +80,12 @@ func launchWebview() {
 		// Register application specific utils here
 		//w.Bind("counter", &Counter{})
 		//counter := plugins.NewCounter()
-		w.Bind("counter", &Counter{})
+		//w.Bind("counter", &Counter{})
+
+		native := newNative()
+		w.Bind("native", &native)
+
+		//w.Eval("window.plugins = plugins.data;")
 
 		// Register application specific initialization module last
 		//w.Eval(string(MustAsset("src/ui/app.js")))
