@@ -21,9 +21,9 @@ var vm = new Vue({
   },
   methods: {
     increment: function() { 
-      alert(JSON.stringify(native));
+      var prevVal = this.counterVal
       native.add(this.counterVal, 1);  
-      native.getIncText(this.counterVal, 1);
+      native.getIncText(prevVal, 1);
     },
   }
 });

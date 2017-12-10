@@ -17,6 +17,16 @@ func newNative() Native {
 	return Native{}
 }
 
+//Add increments value
+func (c *Native) Add(val1 uint, val2 uint) {
+	nativeResult(val1 + val2)
+}
+
+//GetIncText gets incremented text
+func (c *Native) GetIncText(incVal uint, incBy uint) {
+	nativeResult(fmt.Sprintf("Incremented %v by %v", incVal, incBy))
+}
+
 func nativeResult(result interface{}) {
 	jsMethodName := toLowerCamelCase(getCallingFunctionName())
 
@@ -26,26 +36,15 @@ func nativeResult(result interface{}) {
 	if isString {
 		stringResult = strings.Replace(stringResult, "\\", "\\\\", -1)
 		stringResult = strings.Replace(stringResult, "'", "\\'", -1)
-		js = fmt.Sprintf("native.done(%s, %s);", jsMethodName, fmt.Sprintf("'%s'", stringResult))
+		js = fmt.Sprintf("native.done('%s', %s);", jsMethodName, fmt.Sprintf("'%s'", stringResult))
 	} else if reflect.TypeOf(result).Kind() == reflect.Struct {
-		js = fmt.Sprintf("native.done(%s, %v);", jsMethodName, result)
+		js = fmt.Sprintf("native.done('%s', %v);", jsMethodName, result)
 	} else {
-		js = fmt.Sprintf("native.done(%s, %v);", jsMethodName, result)
+		js = fmt.Sprintf("native.done('%s', %v);", jsMethodName, result)
 	}
 
-	fmt.Println(js)
 	w.Eval(js)
 }
-
-//Add increments value
-func (c *Native) Add(val1 uint, val2 uint) {
-	nativeResult(val1 + val2)
-}
-
-//GetIncText gets incremented text
-// func (c *Native) GetIncText(incVal uint, incBy uint) {
-// 	nativeResult(fmt.Sprintf("Incremented''' %v by %v", incVal, incBy))
-// }
 
 func toLowerCamelCase(s string) string {
 	if s == "" {
