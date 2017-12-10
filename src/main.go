@@ -128,26 +128,9 @@ func launchFileServer(port uint) {
 	})
 
 	fileServerHostAddress := fmt.Sprintf(":%d", port)
-	fmt.Printf("Debug server listening on http://localhost%s%s", fileServerHostAddress, URLPathDebug)
+	fmt.Printf("Debug server listening on http://localhost%s%s\n", fileServerHostAddress, URLPathDebug)
 	err := http.ListenAndServe(fileServerHostAddress, nil) // set listen port
 	if err != nil {
 		fmt.Printf("Unable to start file server due to error: %s", err)
 	}
-}
-
-// func registerPlugin(pluginVar string, plugin interface{}) {
-// 	w.Bind(pluginVar, &plugin)
-// }
-
-func onDone(result interface{}) {
-	var js string
-	stringResult, isString := result.(string)
-
-	if isString {
-		js = fmt.Sprintf("native.done(%s);", fmt.Sprintf("'%s'", stringResult))
-	} else {
-		js = fmt.Sprintf("native.done(%v);", result)
-	}
-	fmt.Println(js)
-	w.Eval(js)
 }
