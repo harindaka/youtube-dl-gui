@@ -138,3 +138,16 @@ func launchFileServer(port uint) {
 // func registerPlugin(pluginVar string, plugin interface{}) {
 // 	w.Bind(pluginVar, &plugin)
 // }
+
+func onDone(result interface{}) {
+	var js string
+	stringResult, isString := result.(string)
+
+	if isString {
+		js = fmt.Sprintf("native.done(%s);", fmt.Sprintf("'%s'", stringResult))
+	} else {
+		js = fmt.Sprintf("native.done(%v);", result)
+	}
+	fmt.Println(js)
+	w.Eval(js)
+}

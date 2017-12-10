@@ -13,7 +13,7 @@ func newNative() Native {
 }
 
 //Add increments value
-func (c *Native) Add(val1 uint, val2 uint) uint {
+func (c *Native) Add(val1 uint, val2 uint) {
 	fmt.Println(val1 + val2)
-	return val1 + val2
+	onDone(val1 + val2)
 }

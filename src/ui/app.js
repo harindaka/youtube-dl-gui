@@ -5,9 +5,12 @@ var vm = new Vue({
     counterVal: 0
   },
   methods: {
-    increment: function() { 
-      this.counterVal = native.add(this.counterVal, 1);             
-      alert(this.counterVal);
+    increment: function() {    
+      native.done = function(result){
+        alert(result);
+        this.counterVal = result
+      } 
+      native.add(this.counterVal, 1);                   
     },
   }
 });
