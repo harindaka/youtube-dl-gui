@@ -1,32 +1,62 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/zserge/webview"
 )
 
 //GoUI plugin
-type GoUI struct{}
+type GoUI struct {
+	messageHandlers map[string]func([]byte)
+}
 
 //NewNative creates a new Counter plugin
 func newGoUI() GoUI {
-	return GoUI{}
+	return GoUI{
+		messageHandlers: make(map[string]func([]byte)),
+	}
 }
 
-//Add increments value
-func (c *GoUI) Add(val1 uint, val2 uint) {
-	nativeResult(val1 + val2)
+//OnMessage registers a message handler
+func (g *GoUI) OnMessage(messageType string, messageHandler func([]byte)) {
+	g.messageHandlers[messageType] = messageHandler
 }
 
-//GetIncText gets incremented text
-func (c *GoUI) GetIncText(incVal uint, incBy uint) {
-	nativeResult(fmt.Sprintf("Incremented %v by %v", incVal, incBy))
+//InvokeGoMessageHandler triggers the message handler
+func (g *GoUI) InvokeGoMessageHandler(messageType string, message string) {
+	handler, ok := g.messageHandlers[messageType]
+	if ok {
+		handler([]byte(message))
+	}
 }
 
+//Send sends a message
+func (g *GoUI) Send(wv webview.WebView, messageType string, message interface{}) error {
+	var serializedMessage []byte
+	var err error
+	if message != nil {
+		serializedMessage, err = json.Marshal(message)
+		if err != nil {
+			return err
+		}
+	} else {
+		serializedMessage = []byte("")
+	}
+
+	js := fmt.Sprintf("goui.invokeJsMessageHandler('%s', '%s');", messageType, string(serializedMessage))
+	wv.Eval(js)
+
+	return nil
+}
+
+//nativeResult sends a message
 func nativeResult(result interface{}) {
 	jsMethodName := toLowerCamelCase(getCallingFunctionName())
 
@@ -36,11 +66,11 @@ func nativeResult(result interface{}) {
 	if isString {
 		stringResult = strings.Replace(stringResult, "\\", "\\\\", -1)
 		stringResult = strings.Replace(stringResult, "'", "\\'", -1)
-		js = fmt.Sprintf("goui.onMessage('%s', %s);", jsMethodName, fmt.Sprintf("'%s'", stringResult))
+		js = fmt.Sprintf("goui.invokeJsMessageHandler('%s', %s);", jsMethodName, fmt.Sprintf("'%s'", stringResult))
 	} else if reflect.TypeOf(result).Kind() == reflect.Struct {
-		js = fmt.Sprintf("goui.onMessage('%s', %v);", jsMethodName, result)
+		js = fmt.Sprintf("goui.invokeJsMessageHandler('%s', %v);", jsMethodName, result)
 	} else {
-		js = fmt.Sprintf("goui.onMessage('%s', %v);", jsMethodName, result)
+		js = fmt.Sprintf("goui.invokeJsMessageHandler('%s', %v);", jsMethodName, result)
 	}
 
 	w.Eval(js)

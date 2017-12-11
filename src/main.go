@@ -2,6 +2,7 @@ package main
 
 //import "github.com/zserge/webview"
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -80,9 +81,53 @@ func launchWebview() {
 		//counter := plugins.NewCounter()
 		//w.Bind("counter", &Counter{})
 
-		native := newGoUI()
-		w.Bind("goui", &native)
-		w.Eval("window.goui.onMessage = function(){}")
+		goui := newGoUI()
+
+		goui.OnMessage("add", func(message []byte) {
+			var args map[string]uint
+			json.Unmarshal(message, &args)
+
+			val1 := args["val1"]
+			val2 := args["val2"]
+
+			goui.Send(w, "add", val1+val2)
+		})
+
+		goui.OnMessage("getIncText", func(message []byte) {
+			var args map[string]uint
+			json.Unmarshal(message, &args)
+
+			val1 := args["val1"]
+			val2 := args["val2"]
+			result := fmt.Sprintf("Incremented %d by %d", val1, val2)
+
+			goui.Send(w, "getIncText", result)
+		})
+
+		w.Bind("goui", &goui)
+		w.Eval(`
+			goui.messageHandlers = {};
+			goui.onMessage = function(messageType, messageHandler){
+				goui.messageHandlers[messageType] = messageHandler;
+			};
+
+			goui.invokeJsMessageHandler = function(messageType, message){
+				var handler = goui.messageHandlers[messageType];
+				if(handler){
+					var parsedMessage = JSON.parse(message)
+					handler(parsedMessage);
+				}
+			};
+
+			goui.send = function(messageType, message){
+				var stringifiedMessage = "";
+				if(typeof message !== 'undefined' && message !== null){
+					stringifiedMessage = JSON.stringify(message);
+				}
+
+				goui.invokeGoMessageHandler(messageType, stringifiedMessage);
+			}
+		`)
 
 		//w.Eval("window.plugins = plugins.data;")
 

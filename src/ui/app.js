@@ -7,22 +7,26 @@ var vm = new Vue({
   },
   created: function() {
     var vm = this;
-    goui.onMessage = function(messageType, message){
-      switch(messageType) {
-        case "getIncText":
-          vm.incrementText = message
-          break;
-        case "add":
-          vm.counterVal = message
-          break;          
-      }      
-    }
+    goui.onMessage("add", function(message){
+      vm.counterVal = parseInt(message);
+    });
+
+    goui.onMessage("getIncText", function(message){
+      vm.incrementText = message;
+    });
   },
   methods: {
     increment: function() {      
       var prevVal = this.counterVal 
-      goui.add(this.counterVal, 1);
-      goui.getIncText(prevVal, 1);      
+      goui.send("add", {
+        val1: this.counterVal, 
+        val2: 1
+      });
+      
+      goui.send("getIncText", {
+        val1: prevVal, 
+        val2:1
+      });      
     },
   }
 });
