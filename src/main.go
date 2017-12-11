@@ -68,9 +68,7 @@ func launchWebview() {
 	w.Dispatch(func() {
 
 		// Register ui libraries here (js + css)
-		//w.InjectCSS(string(MustAsset("lib/bootstrap/bootstrap.min.css")))
 		am.prependAsset(w, "lib/bootstrap/bootstrap.min.css", AssetTypeCSS)
-		//w.Eval(string(MustAsset("lib/vue/vue.js")))
 		am.prependAsset(w, "lib/vue/vue.js", AssetTypeJS)
 
 		// Register application specific css assets here
@@ -82,13 +80,13 @@ func launchWebview() {
 		//counter := plugins.NewCounter()
 		//w.Bind("counter", &Counter{})
 
-		native := newNative()
-		w.Bind("native", &native)
+		native := newGoUI()
+		w.Bind("goui", &native)
+		w.Eval("window.goui.onMessage = function(){}")
 
 		//w.Eval("window.plugins = plugins.data;")
 
 		// Register application specific initialization module last
-		//w.Eval(string(MustAsset("src/ui/app.js")))
 		am.appendAsset(w, "src/ui/app.js", AssetTypeJS)
 	})
 	w.Run()

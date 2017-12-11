@@ -9,21 +9,21 @@ import (
 	"unicode/utf8"
 )
 
-//Native plugin
-type Native struct{}
+//GoUI plugin
+type GoUI struct{}
 
 //NewNative creates a new Counter plugin
-func newNative() Native {
-	return Native{}
+func newGoUI() GoUI {
+	return GoUI{}
 }
 
 //Add increments value
-func (c *Native) Add(val1 uint, val2 uint) {
+func (c *GoUI) Add(val1 uint, val2 uint) {
 	nativeResult(val1 + val2)
 }
 
 //GetIncText gets incremented text
-func (c *Native) GetIncText(incVal uint, incBy uint) {
+func (c *GoUI) GetIncText(incVal uint, incBy uint) {
 	nativeResult(fmt.Sprintf("Incremented %v by %v", incVal, incBy))
 }
 
@@ -36,11 +36,11 @@ func nativeResult(result interface{}) {
 	if isString {
 		stringResult = strings.Replace(stringResult, "\\", "\\\\", -1)
 		stringResult = strings.Replace(stringResult, "'", "\\'", -1)
-		js = fmt.Sprintf("native.done('%s', %s);", jsMethodName, fmt.Sprintf("'%s'", stringResult))
+		js = fmt.Sprintf("goui.onMessage('%s', %s);", jsMethodName, fmt.Sprintf("'%s'", stringResult))
 	} else if reflect.TypeOf(result).Kind() == reflect.Struct {
-		js = fmt.Sprintf("native.done('%s', %v);", jsMethodName, result)
+		js = fmt.Sprintf("goui.onMessage('%s', %v);", jsMethodName, result)
 	} else {
-		js = fmt.Sprintf("native.done('%s', %v);", jsMethodName, result)
+		js = fmt.Sprintf("goui.onMessage('%s', %v);", jsMethodName, result)
 	}
 
 	w.Eval(js)
