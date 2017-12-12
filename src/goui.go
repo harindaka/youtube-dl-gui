@@ -60,6 +60,39 @@ func (g *GoUI) AppendAsset(assetPath string, assetType string) {
 	g.appendAssetsIndex = append(g.appendAssetsIndex, assetPath)
 }
 
+//GetGoUIJS returns the js necessary for goui to function
+func (g *GoUI) GetGoUIJS() string {
+	js := `
+		goui.messageHandlers = {};
+		goui.onMessage = function(messageType, messageHandler){
+			goui.messageHandlers[messageType] = messageHandler;
+		};
+
+		goui.invokeJsMessageHandler = function(messageType, message){
+			var handler = goui.messageHandlers[messageType];
+			if(handler){
+				var parsedMessage = JSON.parse(message)
+				handler(parsedMessage);
+			}
+		};
+
+		goui.send = function(messageType, message){
+			var stringifiedMessage = "";
+			if(typeof message !== 'undefined' && message !== null){
+				stringifiedMessage = JSON.stringify(message);
+			}
+
+			goui.invokeGoMessageHandler(messageType, stringifiedMessage);
+		}
+	`
+	return js
+}
+
+//Eval evals specified js
+func (g *GoUI) Eval(js string) {
+	g.wv.Eval(js)
+}
+
 //ForEachPrependAsset allows iteration of prepended assets
 func (g *GoUI) ForEachPrependAsset(f func(string, string)) {
 	for _, assetPath := range g.prependAssetsIndex {
