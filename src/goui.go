@@ -1,14 +1,34 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"log"
 	"net/http"
 	"strings"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
+	"github.com/gorilla/websocket"
 	"github.com/zserge/webview"
 )
+
+type message struct {
+	messageType string
+	message     interface{}
+}
+
+type debugHTMLTemplateModel struct {
+	port          uint
+	prependAssets []uiAsset
+	appendAssets  []uiAsset
+}
+
+type uiAsset struct {
+	assetPath string
+	assetLink string
+}
 
 //GoUI plugin
 type GoUI struct {
@@ -58,6 +78,30 @@ func (g *GoUI) StartApplication(dispatch func()) {
 	g.wv.Run()
 }
 
+func templateFromFile(templatePath string) *template.Template {
+	templateContent := string(MustAsset(templatePath))
+	t := template.New(templatePath)
+	t.Parse(templateContent)
+
+	return t
+}
+
+func (g *GoUI) generateDebugHTML(port uint) string {
+	t := templateFromFile("src/templates/goui/debug.html")
+	model := debugHTMLTemplateModel{
+		port:          port,
+		appendAssets:  assetsToArray(g.appendAssets, g.appendAssetsIndex),
+		prependAssets: assetsToArray(g.prependAssets, g.prependAssetsIndex),
+	}
+
+	var parsedBytes bytes.Buffer
+	if err := t.Execute(&parsedBytes, model); err != nil {
+		panic(err)
+	}
+
+	return parsedBytes.String()
+}
+
 //StartDevServer runs a dev server on specified port
 func (g *GoUI) StartDevServer(port uint) {
 	http.Handle("/",
@@ -65,46 +109,21 @@ func (g *GoUI) StartDevServer(port uint) {
 			&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo}))
 
 	http.HandleFunc("/debug", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`
-			<!DOCTYPE html>"
-				<html>
-					<head>
-						<script>
-							window.goui = {};
-		`))
-		w.Write([]byte(goui.GetGoUIJS()))
-		w.Write([]byte(`
-							//todo: initiate ws connection here
+		debugHTML := g.generateDebugHTML(port)
+		w.Write([]byte(debugHTML))
+	})
 
-							//override goui.invokeGoMessageHandler to point to dev server
-							goui.invokeGoMessageHandler = function(messageType, stringifiedMessage){
-								//todo: send messageType and stringifiedMessage via ws to dev server
-							}
+	http.HandleFunc("/websocket", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Origin") != "http://"+r.Host {
+			http.Error(w, "Origin not allowed", 403)
+			return
+		}
+		con, err := websocket.Upgrade(w, r, w.Header(), 1024, 1024)
+		if err != nil {
+			http.Error(w, "Could not open websocket connection", http.StatusBadRequest)
+		}
 
-							//todo: listen for ws incoming and
-							//call goui.invokeJsMessageHandler(messageType, message)
-						</script>
-		`))
-
-		goui.ForEachPrependAsset(func(assetPath string, assetType string) {
-			markup := fmt.Sprintf(assetType, assetPath)
-			markup = fmt.Sprintf("%s\n", markup)
-			w.Write([]byte(markup))
-		})
-
-		w.Write([]byte("<title>Page Title</title>\n"))
-		w.Write([]byte("</head>\n"))
-		w.Write([]byte("<body>\n"))
-		w.Write([]byte("<div id=\"app\"></div>\n"))
-
-		goui.ForEachAppendAsset(func(assetPath string, assetType string) {
-			markup := fmt.Sprintf(assetType, assetPath)
-			markup = fmt.Sprintf("%s\n", markup)
-			w.Write([]byte(markup))
-		})
-
-		w.Write([]byte("</body>\n"))
-		w.Write([]byte("</html>"))
+		go listenWS(con)
 	})
 
 	fileServerHostAddress := fmt.Sprintf(":%d", port)
@@ -112,6 +131,22 @@ func (g *GoUI) StartDevServer(port uint) {
 	err := http.ListenAndServe(fileServerHostAddress, nil) // set listen port
 	if err != nil {
 		fmt.Printf("Unable to start file server due to error: %s", err)
+	}
+}
+
+func listenWS(con *websocket.Conn) {
+	for {
+		messageType, p, err := con.ReadMessage()
+		if err != nil {
+			log.Println(err)
+		} else {
+			fmt.Println(messageType)
+			fmt.Println(string(p))
+		}
+
+		if err := con.WriteMessage(messageType, p); err != nil {
+			log.Println(err)
+		}
 	}
 }
 
@@ -173,20 +208,18 @@ func (g *GoUI) GetGoUIJS() string {
 	return js
 }
 
-//ForEachPrependAsset allows iteration of prepended assets
-func (g *GoUI) ForEachPrependAsset(f func(string, string)) {
-	for _, assetPath := range g.prependAssetsIndex {
-		assetType := g.prependAssets[assetPath]
-		f(assetPath, assetType)
-	}
-}
+func assetsToArray(assets map[string]string, index []string) []uiAsset {
+	var assetsArray []uiAsset
 
-//ForEachAppendAsset allows iteration of appended assets
-func (g *GoUI) ForEachAppendAsset(f func(string, string)) {
-	for _, assetPath := range g.appendAssetsIndex {
-		assetType := g.appendAssets[assetPath]
-		f(assetPath, assetType)
+	for _, assetPath := range index {
+		assetType := assets[assetPath]
+		assetsArray = append(assetsArray, uiAsset{
+			assetPath: assetPath,
+			assetLink: fmt.Sprintf(assetType, assetPath),
+		})
 	}
+
+	return assetsArray
 }
 
 //OnMessage registers a message handler
