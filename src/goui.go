@@ -24,6 +24,7 @@ type DebugHTMLTemplateModel struct {
 	Port          uint
 	PrependAssets []UIAsset
 	AppendAssets  []UIAsset
+	UIJS          string
 }
 
 //UIAsset is the model for a ui asset
@@ -89,19 +90,27 @@ func templateFromFile(templatePath string) *template.Template {
 }
 
 func (g *GoUI) generateDebugHTML(port uint) string {
-	t := templateFromFile("templates/goui/debug.html")
+
+	jsTemplate := templateFromFile("templates/goui/goui.js")
+	var parsedJsBytes bytes.Buffer
+	if err := jsTemplate.Execute(&parsedJsBytes, nil); err != nil {
+		panic(err)
+	}
+
 	model := DebugHTMLTemplateModel{
 		Port:          port,
 		AppendAssets:  assetsToArray(g.appendAssets, g.appendAssetsIndex),
 		PrependAssets: assetsToArray(g.prependAssets, g.prependAssetsIndex),
+		UIJS:          parsedJsBytes.String(),
 	}
 
-	var parsedBytes bytes.Buffer
-	if err := t.Execute(&parsedBytes, model); err != nil {
+	htmlTemplate := templateFromFile("templates/goui/debug.html")
+	var parsedHTMLBytes bytes.Buffer
+	if err := htmlTemplate.Execute(&parsedHTMLBytes, model); err != nil {
 		panic(err)
 	}
 
-	return parsedBytes.String()
+	return parsedHTMLBytes.String()
 }
 
 //StartDevServer runs a dev server on specified port
