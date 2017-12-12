@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 
 	bindata "github.com/jteeuwen/go-bindata"
 	"github.com/zserge/webview"
@@ -17,22 +16,7 @@ func main() {
 	//Hack to keep the dependency github.com/jteeuwen/go-bindata in vendor folder
 	var _ = bindata.NewConfig
 
-	if len(os.Args) >= 2 && os.Args[1] == "debug" {
-		isDebugging = true
-	}
-
-	var fileServerPort uint
-	fileServerPort = 3030
-
-	if isDebugging && len(os.Args) >= 3 {
-		fileServerPortStr := os.Args[2]
-		port, err := strconv.ParseUint(fileServerPortStr, 0, 64)
-		if err != nil || port < 0 || port > 65535 {
-			panic(fmt.Sprintf("Invalid file server port specified %s", fileServerPortStr))
-		}
-
-		fileServerPort = uint(port)
-	}
+	isDebugging = (len(os.Args) >= 2 && os.Args[1] == "debug")
 
 	goui = newGoUI(webview.Settings{
 		Title:     "Youtube Downloader", // + uiFrameworkName,
@@ -44,7 +28,7 @@ func main() {
 
 	if isDebugging {
 		go func() {
-			goui.StartDevServer(fileServerPort)
+			goui.StartDevServer(3030)
 		}()
 	}
 
