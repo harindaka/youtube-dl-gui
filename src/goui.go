@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
+	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/zserge/webview"
 )
 
@@ -45,8 +47,8 @@ func (g *GoUI) GetWebViewSettings(dispatch func()) webview.Settings {
 	return g.wvSettings
 }
 
-//Run starts a GoUI application
-func (g *GoUI) Run(dispatch func()) {
+//StartApplication starts a GoUI application
+func (g *GoUI) StartApplication(dispatch func()) {
 	g.wv.Dispatch(func() {
 		g.wv.Bind("goui", g)
 		g.wv.Eval(g.GetGoUIJS())
@@ -54,6 +56,63 @@ func (g *GoUI) Run(dispatch func()) {
 		dispatch()
 	})
 	g.wv.Run()
+}
+
+//StartDevServer runs a dev server on specified port
+func (g *GoUI) StartDevServer(port uint) {
+	http.Handle("/",
+		http.FileServer(
+			&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo}))
+
+	http.HandleFunc("/debug", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`
+			<!DOCTYPE html>"
+				<html>
+					<head>
+						<script>
+							window.goui = {};
+		`))
+		w.Write([]byte(goui.GetGoUIJS()))
+		w.Write([]byte(`
+							//todo: initiate ws connection here
+
+							//override goui.invokeGoMessageHandler to point to dev server
+							goui.invokeGoMessageHandler = function(messageType, stringifiedMessage){
+								//todo: send messageType and stringifiedMessage via ws to dev server
+							}
+
+							//todo: listen for ws incoming and
+							//call goui.invokeJsMessageHandler(messageType, message)
+						</script>
+		`))
+
+		goui.ForEachPrependAsset(func(assetPath string, assetType string) {
+			markup := fmt.Sprintf(assetType, assetPath)
+			markup = fmt.Sprintf("%s\n", markup)
+			w.Write([]byte(markup))
+		})
+
+		w.Write([]byte("<title>Page Title</title>\n"))
+		w.Write([]byte("</head>\n"))
+		w.Write([]byte("<body>\n"))
+		w.Write([]byte("<div id=\"app\"></div>\n"))
+
+		goui.ForEachAppendAsset(func(assetPath string, assetType string) {
+			markup := fmt.Sprintf(assetType, assetPath)
+			markup = fmt.Sprintf("%s\n", markup)
+			w.Write([]byte(markup))
+		})
+
+		w.Write([]byte("</body>\n"))
+		w.Write([]byte("</html>"))
+	})
+
+	fileServerHostAddress := fmt.Sprintf(":%d", port)
+	fmt.Printf("Debug server listening on http://localhost%s%s\n", fileServerHostAddress, URLPathDebug)
+	err := http.ListenAndServe(fileServerHostAddress, nil) // set listen port
+	if err != nil {
+		fmt.Printf("Unable to start file server due to error: %s", err)
+	}
 }
 
 //PrependAsset prepends an asset in the HTML header
