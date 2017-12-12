@@ -74,43 +74,36 @@ func (g *GoUI) GetWebViewSettings(dispatch func()) webview.Settings {
 func (g *GoUI) StartApplication(dispatch func()) {
 	g.wv.Dispatch(func() {
 		g.wv.Bind("goui", g)
-		g.wv.Eval(g.GetGoUIJS())
+		g.wv.Eval(g.getGoUIJS())
 
 		dispatch()
 	})
 	g.wv.Run()
 }
 
-func templateFromFile(templatePath string) *template.Template {
+func parseTemplate(templatePath string, model interface{}) string {
 	templateContent := string(MustAsset(templatePath))
 	t := template.New(templatePath)
 	t.Parse(templateContent)
 
-	return t
+	var parsedBytes bytes.Buffer
+	if err := t.Execute(&parsedBytes, model); err != nil {
+		panic(err)
+	}
+
+	return parsedBytes.String()
 }
 
 func (g *GoUI) generateDebugHTML(port uint) string {
-
-	jsTemplate := templateFromFile("templates/goui/goui.js")
-	var parsedJsBytes bytes.Buffer
-	if err := jsTemplate.Execute(&parsedJsBytes, nil); err != nil {
-		panic(err)
-	}
 
 	model := DebugHTMLTemplateModel{
 		Port:          port,
 		AppendAssets:  assetsToArray(g.appendAssets, g.appendAssetsIndex),
 		PrependAssets: assetsToArray(g.prependAssets, g.prependAssetsIndex),
-		UIJS:          parsedJsBytes.String(),
+		UIJS:          g.getGoUIJS(),
 	}
 
-	htmlTemplate := templateFromFile("templates/goui/debug.html")
-	var parsedHTMLBytes bytes.Buffer
-	if err := htmlTemplate.Execute(&parsedHTMLBytes, model); err != nil {
-		panic(err)
-	}
-
-	return parsedHTMLBytes.String()
+	return parseTemplate("templates/goui/debug.html", model)
 }
 
 //StartDevServer runs a dev server on specified port
@@ -191,32 +184,8 @@ func (g *GoUI) AppendAsset(assetPath string, assetType string) {
 	g.appendAssetsIndex = append(g.appendAssetsIndex, assetPath)
 }
 
-//GetGoUIJS returns the js necessary for goui to function
-func (g *GoUI) GetGoUIJS() string {
-	js := `
-		goui.messageHandlers = {};
-		goui.onMessage = function(messageType, messageHandler){
-			goui.messageHandlers[messageType] = messageHandler;
-		};
-
-		goui.invokeJsMessageHandler = function(messageType, message){
-			var handler = goui.messageHandlers[messageType];
-			if(handler){
-				var parsedMessage = JSON.parse(message)
-				handler(parsedMessage);
-			}
-		};
-
-		goui.send = function(messageType, message){
-			var stringifiedMessage = "";
-			if(typeof message !== 'undefined' && message !== null){
-				stringifiedMessage = JSON.stringify(message);
-			}
-
-			goui.invokeGoMessageHandler(messageType, stringifiedMessage);
-		}
-	`
-	return js
+func (g *GoUI) getGoUIJS() string {
+	return parseTemplate("templates/goui/goui.js", nil)
 }
 
 func assetsToArray(assets map[string]string, index []string) []UIAsset {
