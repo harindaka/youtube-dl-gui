@@ -16,10 +16,10 @@
         }
     };
 
-    goui.send = function(messageType, message){
+    goui.send = function(messageType, messageObject){
         var stringifiedMessage = "";
-        if(typeof message !== 'undefined' && message !== null){
-            stringifiedMessage = JSON.stringify(message);
+        if(typeof messageObject !== 'undefined' && messageObject !== null){
+            stringifiedMessage = JSON.stringify(messageObject);
         }
 
         goui.invokeGoMessageHandler(messageType, stringifiedMessage);

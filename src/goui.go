@@ -14,11 +14,6 @@ import (
 	"github.com/zserge/webview"
 )
 
-type message struct {
-	messageType string
-	message     interface{}
-}
-
 //DebugHTMLTemplateModel is the debug html template model
 type DebugHTMLTemplateModel struct {
 	Port          uint
@@ -127,7 +122,7 @@ func (g *GoUI) StartDevServer(port uint) {
 			http.Error(w, "Could not open websocket connection", http.StatusBadRequest)
 		}
 
-		go listenWS(con)
+		go g.listenWS(con)
 	})
 
 	fileServerHostAddress := fmt.Sprintf(":%d", port)
@@ -138,17 +133,37 @@ func (g *GoUI) StartDevServer(port uint) {
 	}
 }
 
-func listenWS(con *websocket.Conn) {
+func (g *GoUI) listenWS(con *websocket.Conn) {
 	for {
-		messageType, p, err := con.ReadMessage()
+		wsMessageType, messageBuffer, err := con.ReadMessage()
 		if err != nil {
 			log.Println(err)
 		} else {
-			fmt.Println(messageType)
-			fmt.Println(string(p))
+			if wsMessageType == websocket.TextMessage {
+				wsMessage := make(map[string]string)
+				json.Unmarshal(messageBuffer, &wsMessage)
+
+				var fieldExists bool
+				var messageType string
+				var stringifiedMessage string
+				messageType, fieldExists = wsMessage["messageType"]
+				if !fieldExists {
+					panic(fmt.Sprintf("No messageType field found in received websocket message: %s", string(messageBuffer)))
+				}
+
+				stringifiedMessage, fieldExists = wsMessage["stringifiedMessage"]
+				if !fieldExists {
+					panic(fmt.Sprintf("No message field found in received websocket message: %s", string(messageBuffer)))
+				}
+
+				fmt.Println(messageType)
+				fmt.Println(stringifiedMessage)
+
+				g.InvokeGoMessageHandler(messageType, stringifiedMessage)
+			}
 		}
 
-		if err := con.WriteMessage(messageType, p); err != nil {
+		if err := con.WriteMessage(wsMessageType, messageBuffer); err != nil {
 			log.Println(err)
 		}
 	}

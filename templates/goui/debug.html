@@ -4,14 +4,26 @@
 		<script>
 			{{ .UIJS }}
 
-			(function(){
+			(function(){								
 				if (window.WebSocket === undefined) {
 					alert("Your browser does not support WebSockets");
 				} else {
 					var ws = new WebSocket('ws://localhost:{{.Port}}/websocket');
+				
+					//override goui.invokeGoMessageHandler to point to dev server
+					goui.invokeGoMessageHandler = function(messageType, stringifiedMessage){						
+						var wsMessage = {
+							messageType: messageType,
+							stringifiedMessage: stringifiedMessage
+						};
+						ws.send(JSON.stringify(wsMessage));
+					}
+
 					ws.onopen = function() {
 						console.log('Websocket connection opened successfully');
-						//ws.send(JSON.stringify({ test: "test" }));
+						
+						//emulating call to js.send from app logic
+						goui.send("test", JSON.stringify({ test: "test" }));
 					};
 					ws.onmessage = function (e) {
 						console.log(e);
@@ -22,10 +34,7 @@
 					};
 				}
 
-				//override goui.invokeGoMessageHandler to point to dev server
-				goui.invokeGoMessageHandler = function(messageType, stringifiedMessage){
-					//todo: send messageType and stringifiedMessage via ws to dev server
-				}
+				
 
 				ws.onmessage = function(m){
 					goui.invokeJsMessageHandler(m.messageType, m.message)
