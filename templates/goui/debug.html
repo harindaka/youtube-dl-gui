@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script>
+			(function(){
+				window.goui = {};
+
+				if (window.WebSocket === undefined) {
+					alert("Your browser does not support WebSockets");
+				} else {
+					var ws = new WebSocket('ws://localhost:{{.Port}}/websocket');
+					ws.onopen = function() {
+						console.log('Websocket connection opened successfully');
+						//ws.send(JSON.stringify({ test: "test" }));
+					};
+					ws.onmessage = function (e) {
+						console.log(e);
+						//ws.send(JSON.stringify({ test: "test" }));
+					};
+					ws.onclose = function () {
+						location.reload();
+					};
+				}
+
+				//override goui.invokeGoMessageHandler to point to dev server
+				goui.invokeGoMessageHandler = function(messageType, stringifiedMessage){
+					//todo: send messageType and stringifiedMessage via ws to dev server
+				}
+
+				ws.onmessage = function(m){
+					goui.invokeJsMessageHandler(m.messageType, m.message)
+				};
+
+				ws.onclose = function(){
+					location.reload();
+				};
+			})();
+		</script>
+
+		{{with .PrependAssets}}
+		{{range .}}
+		{{.AssetLink}}
+		{{end}}
+		{{end}}
+
+		<title>GoUI Debugger</title>
+	</head>
+	<body>
+		<div id="app"></div>
+
+		{{with .AppendAssets}}
+		{{range .}}
+		{{.AssetLink}}
+		{{end}}
+		{{end}}
+
+	</body>
+</html>
