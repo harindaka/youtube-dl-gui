@@ -20,7 +20,10 @@ type GoUI struct {
 }
 
 //NewNative creates a new Counter plugin
-func newGoUI(wv webview.WebView) GoUI {
+func newGoUI(s webview.Settings) GoUI {
+	wv := webview.New(s)
+	defer wv.Exit()
+
 	return GoUI{
 		messageHandlers: make(map[string]func([]byte)),
 		wv:              wv,
@@ -28,6 +31,17 @@ func newGoUI(wv webview.WebView) GoUI {
 		prependAssets: make(map[string]string),
 		appendAssets:  make(map[string]string),
 	}
+}
+
+//Run starts a GoUI application
+func (g *GoUI) Run(dispatch func()) {
+	g.wv.Dispatch(func() {
+		g.wv.Bind("goui", g)
+		g.wv.Eval(g.GetGoUIJS())
+
+		dispatch()
+	})
+	g.wv.Run()
 }
 
 //PrependAsset prepends an asset in the HTML header

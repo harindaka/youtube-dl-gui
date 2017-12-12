@@ -56,21 +56,16 @@ func main() {
 }
 
 func launchWebview() {
-	w := webview.New(webview.Settings{
+
+	goui = newGoUI(webview.Settings{
 		Title:     "Youtube Downloader", // + uiFrameworkName,
 		Resizable: true,
 		Debug:     isDebugging,
 		Height:    768,
 		Width:     1024,
 	})
-	defer w.Exit()
 
-	goui = newGoUI(w)
-
-	w.Dispatch(func() {
-		w.Bind("goui", &goui)
-		goui.Eval(goui.GetGoUIJS())
-
+	goui.Run(func() {
 		// Register ui libraries here (js + css)
 		goui.PrependAsset("lib/bootstrap/bootstrap.min.css", AssetTypeCSS)
 		goui.PrependAsset("lib/vue/vue.js", AssetTypeJS)
@@ -108,7 +103,6 @@ func launchWebview() {
 		// Register application specific initialization module last
 		goui.AppendAsset("src/ui/app.js", AssetTypeJS)
 	})
-	w.Run()
 }
 
 func launchFileServer(port uint) {
