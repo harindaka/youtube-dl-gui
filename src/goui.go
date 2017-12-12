@@ -156,16 +156,15 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 					panic(fmt.Sprintf("No message field found in received websocket message: %s", string(messageBuffer)))
 				}
 
-				fmt.Println(messageType)
-				fmt.Println(stringifiedMessage)
+				fmt.Println("Received message: " + stringifiedMessage)
 
 				g.InvokeGoMessageHandler(messageType, stringifiedMessage)
 			}
 		}
 
-		if err := con.WriteMessage(wsMessageType, messageBuffer); err != nil {
-			log.Println(err)
-		}
+		// if err := con.WriteMessage(websocket.TextMessage, messageBuffer); err != nil {
+		// 	log.Println(err)
+		// }
 	}
 }
 
