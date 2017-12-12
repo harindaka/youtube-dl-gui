@@ -16,7 +16,7 @@ import (
 
 //DebugHTMLTemplateModel is the debug html template model
 type DebugHTMLTemplateModel struct {
-	Port          uint
+	DevServerPort uint
 	PrependAssets []UIAsset
 	AppendAssets  []UIAsset
 	UIJS          string
@@ -30,9 +30,12 @@ type UIAsset struct {
 
 //GoUI plugin
 type GoUI struct {
+	DevServerPort uint
+
 	messageHandlers map[string]func([]byte)
 	wv              webview.WebView
 	wvSettings      webview.Settings
+	startMode       bool
 
 	prependAssets      map[string]string
 	prependAssetsIndex []string
@@ -42,13 +45,12 @@ type GoUI struct {
 
 //NewNative creates a new Counter plugin
 func newGoUI(s webview.Settings) GoUI {
-	wv := webview.New(s)
-	defer wv.Exit()
-
 	return GoUI{
+		DevServerPort: 3030,
+
 		messageHandlers: make(map[string]func([]byte)),
-		wv:              wv,
 		wvSettings:      s,
+		startMode:       StartModeApplication,
 
 		prependAssets: make(map[string]string),
 		appendAssets:  make(map[string]string),
@@ -65,15 +67,25 @@ func (g *GoUI) GetWebViewSettings(dispatch func()) webview.Settings {
 	return g.wvSettings
 }
 
-//StartApplication starts a GoUI application
-func (g *GoUI) StartApplication(dispatch func()) {
-	g.wv.Dispatch(func() {
-		g.wv.Bind("goui", g)
-		g.wv.Eval(g.getGoUIJS())
+//Start starts a GoUI application or dev server
+func (g *GoUI) Start(startMode bool, registerAssets func(*GoUI)) {
+	g.startMode = startMode
+	if startMode == StartModeApplication {
+		g.wv = webview.New(g.wvSettings)
+		defer g.wv.Exit()
 
-		dispatch()
-	})
-	g.wv.Run()
+		g.wv.Dispatch(func() {
+			g.wv.Bind("goui", g)
+			g.wv.Eval(g.getGoUIJS())
+
+			registerAssets(g)
+		})
+
+		g.wv.Run()
+	} else {
+		registerAssets(g)
+		g.startDevServer()
+	}
 }
 
 func parseTemplate(templatePath string, model interface{}) string {
@@ -89,10 +101,10 @@ func parseTemplate(templatePath string, model interface{}) string {
 	return parsedBytes.String()
 }
 
-func (g *GoUI) generateDebugHTML(port uint) string {
+func (g *GoUI) generateDebugHTML() string {
 
 	model := DebugHTMLTemplateModel{
-		Port:          port,
+		DevServerPort: g.DevServerPort,
 		AppendAssets:  assetsToArray(g.appendAssets, g.appendAssetsIndex),
 		PrependAssets: assetsToArray(g.prependAssets, g.prependAssetsIndex),
 		UIJS:          g.getGoUIJS(),
@@ -102,13 +114,13 @@ func (g *GoUI) generateDebugHTML(port uint) string {
 }
 
 //StartDevServer runs a dev server on specified port
-func (g *GoUI) StartDevServer(port uint) {
+func (g *GoUI) startDevServer() {
 	http.Handle("/",
 		http.FileServer(
 			&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo}))
 
 	http.HandleFunc("/debug", func(w http.ResponseWriter, r *http.Request) {
-		debugHTML := g.generateDebugHTML(port)
+		debugHTML := g.generateDebugHTML()
 		w.Write([]byte(debugHTML))
 	})
 
@@ -125,7 +137,7 @@ func (g *GoUI) StartDevServer(port uint) {
 		go g.listenWS(con)
 	})
 
-	fileServerHostAddress := fmt.Sprintf(":%d", port)
+	fileServerHostAddress := fmt.Sprintf(":%d", g.DevServerPort)
 	fmt.Printf("Debug server listening on http://localhost%s%s\n", fileServerHostAddress, URLPathDebug)
 	err := http.ListenAndServe(fileServerHostAddress, nil) // set listen port
 	if err != nil {
@@ -172,9 +184,9 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 func (g *GoUI) PrependAsset(assetPath string, assetType string) {
 	switch assetType {
 	case AssetTypeJS:
-		g.wv.Eval(string(MustAsset(assetPath)))
+		g.evalAsset(assetPath)
 	case AssetTypeCSS:
-		g.wv.InjectCSS(string(MustAsset(assetPath)))
+		g.injectCSSAsset(assetPath)
 	default:
 		panic(fmt.Sprintf("Unsupported asset type specified: %s", assetType))
 	}
@@ -187,15 +199,27 @@ func (g *GoUI) PrependAsset(assetPath string, assetType string) {
 func (g *GoUI) AppendAsset(assetPath string, assetType string) {
 	switch assetType {
 	case AssetTypeJS:
-		g.wv.Eval(string(MustAsset(assetPath)))
+		g.evalAsset(assetPath)
 	case AssetTypeCSS:
-		g.wv.InjectCSS(string(MustAsset(assetPath)))
+		g.injectCSSAsset(string(MustAsset(assetPath)))
 	default:
 		panic(fmt.Sprintf("Unsupported asset type specified: %s", assetType))
 	}
 
 	g.appendAssets[assetPath] = assetType
 	g.appendAssetsIndex = append(g.appendAssetsIndex, assetPath)
+}
+
+func (g *GoUI) evalAsset(assetPath string) {
+	if g.startMode == StartModeApplication {
+		g.wv.Eval(string(MustAsset(assetPath)))
+	}
+}
+
+func (g *GoUI) injectCSSAsset(assetPath string) {
+	if g.startMode == StartModeApplication {
+		g.wv.InjectCSS(string(MustAsset(assetPath)))
+	}
 }
 
 func (g *GoUI) getGoUIJS() string {

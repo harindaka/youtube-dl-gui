@@ -3,47 +3,39 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	bindata "github.com/jteeuwen/go-bindata"
 	"github.com/zserge/webview"
 )
 
-var isDebugging = false
-
 func main() {
 	//Hack to keep the dependency github.com/jteeuwen/go-bindata in vendor folder
 	var _ = bindata.NewConfig
 
-	isDebugging = (len(os.Args) >= 2 && os.Args[1] == "debug")
-
 	goui := newGoUI(webview.Settings{
 		Title:     "Youtube Downloader", // + uiFrameworkName,
 		Resizable: true,
-		Debug:     isDebugging,
+		Debug:     true,
 		Height:    768,
 		Width:     1024,
 	})
 
 	registerMessageHandlers(goui)
 
-	if isDebugging {
-		go func() {
-			goui.StartDevServer(3030)
-		}()
-	}
+	goui.DevServerPort = 3030
+	goui.Start(StartModeDevServer, registerAssets)
+}
 
-	goui.StartApplication(func() {
-		// Register ui libraries here (js + css)
-		goui.PrependAsset("lib/bootstrap/bootstrap.min.css", AssetTypeCSS)
-		goui.PrependAsset("lib/vue/vue.js", AssetTypeJS)
+func registerAssets(goui *GoUI) {
+	// Register ui libraries here (js + css)
+	goui.PrependAsset("lib/bootstrap/bootstrap.min.css", AssetTypeCSS)
+	goui.PrependAsset("lib/vue/vue.js", AssetTypeJS)
 
-		// Register application specific css assets here
-		goui.PrependAsset("src/ui/styles.css", AssetTypeCSS)
+	// Register application specific css assets here
+	goui.PrependAsset("src/ui/styles.css", AssetTypeCSS)
 
-		// Register application specific initialization module last
-		goui.AppendAsset("src/ui/app.js", AssetTypeJS)
-	})
+	// Register application specific initialization module last
+	goui.AppendAsset("src/ui/app.js", AssetTypeJS)
 }
 
 func registerMessageHandlers(goui GoUI) {

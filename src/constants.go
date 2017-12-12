@@ -11,3 +11,9 @@ const (
 	FilePathDebugHTML = "src/ui/debug.html"
 	URLPathDebug      = "/debug"
 )
+
+//Start mode
+const (
+	StartModeDevServer   = false
+	StartModeApplication = true
+)

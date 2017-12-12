@@ -8,7 +8,7 @@
 				if (window.WebSocket === undefined) {
 					alert("Your browser does not support WebSockets");
 				} else {
-					var ws = new WebSocket('ws://localhost:{{.Port}}/websocket');
+					var ws = new WebSocket('ws://localhost:{{ .DevServerPort }}/websocket');
 				
 					//override goui.invokeGoMessageHandler to point to dev server
 					goui.invokeGoMessageHandler = function(messageType, stringifiedMessage){						
