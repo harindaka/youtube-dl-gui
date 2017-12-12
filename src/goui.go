@@ -12,6 +12,7 @@ import (
 type GoUI struct {
 	messageHandlers map[string]func([]byte)
 	wv              webview.WebView
+	wvSettings      webview.Settings
 
 	prependAssets      map[string]string
 	prependAssetsIndex []string
@@ -27,10 +28,21 @@ func newGoUI(s webview.Settings) GoUI {
 	return GoUI{
 		messageHandlers: make(map[string]func([]byte)),
 		wv:              wv,
+		wvSettings:      s,
 
 		prependAssets: make(map[string]string),
 		appendAssets:  make(map[string]string),
 	}
+}
+
+//GetWebView returns the WebView used in this GoUI object
+func (g *GoUI) GetWebView(dispatch func()) webview.WebView {
+	return g.wv
+}
+
+//GetWebViewSettings returns the settings used to create this GoUI object
+func (g *GoUI) GetWebViewSettings(dispatch func()) webview.Settings {
+	return g.wvSettings
 }
 
 //Run starts a GoUI application
@@ -100,11 +112,6 @@ func (g *GoUI) GetGoUIJS() string {
 		}
 	`
 	return js
-}
-
-//Eval evals specified js
-func (g *GoUI) Eval(js string) {
-	g.wv.Eval(js)
 }
 
 //ForEachPrependAsset allows iteration of prepended assets

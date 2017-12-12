@@ -71,13 +71,7 @@ func launchWebview() {
 		goui.PrependAsset("lib/vue/vue.js", AssetTypeJS)
 
 		// Register application specific css assets here
-		//w.InjectCSS(string(MustAsset("src/ui/styles.css")))
 		goui.PrependAsset("src/ui/styles.css", AssetTypeCSS)
-
-		// Register application specific utils here
-		//w.Bind("counter", &Counter{})
-		//counter := plugins.NewCounter()
-		//w.Bind("counter", &Counter{})
 
 		goui.OnMessage("add", func(message []byte) {
 			var args map[string]uint
@@ -111,9 +105,26 @@ func launchFileServer(port uint) {
 			&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo}))
 
 	http.HandleFunc("/debug", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("<!DOCTYPE html>\n"))
-		w.Write([]byte("<html>\n"))
-		w.Write([]byte("<head>\n"))
+		w.Write([]byte(`
+			<!DOCTYPE html>"
+				<html>
+					<head>
+						<script>
+							window.goui = {};
+		`))
+		w.Write([]byte(goui.GetGoUIJS()))
+		w.Write([]byte(`
+							//todo: initiate ws connection here
+
+							//override goui.invokeGoMessageHandler to point to dev server
+							goui.invokeGoMessageHandler = function(messageType, stringifiedMessage){
+								//todo: send messageType and stringifiedMessage via ws to dev server
+							}
+
+							//todo: listen for ws incoming and
+							//call goui.invokeJsMessageHandler(messageType, message)
+						</script>
+		`))
 
 		goui.ForEachPrependAsset(func(assetPath string, assetType string) {
 			markup := fmt.Sprintf(assetType, assetPath)
@@ -134,8 +145,6 @@ func launchFileServer(port uint) {
 
 		w.Write([]byte("</body>\n"))
 		w.Write([]byte("</html>"))
-
-		//w.WriteHeader(http.StatusOK)
 	})
 
 	fileServerHostAddress := fmt.Sprintf(":%d", port)
