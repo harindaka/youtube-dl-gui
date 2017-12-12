@@ -10,7 +10,6 @@ import (
 )
 
 var isDebugging = false
-var goui GoUI
 
 func main() {
 	//Hack to keep the dependency github.com/jteeuwen/go-bindata in vendor folder
@@ -18,13 +17,15 @@ func main() {
 
 	isDebugging = (len(os.Args) >= 2 && os.Args[1] == "debug")
 
-	goui = newGoUI(webview.Settings{
+	goui := newGoUI(webview.Settings{
 		Title:     "Youtube Downloader", // + uiFrameworkName,
 		Resizable: true,
 		Debug:     isDebugging,
 		Height:    768,
 		Width:     1024,
 	})
+
+	registerMessageHandlers(goui)
 
 	if isDebugging {
 		go func() {
@@ -40,28 +41,30 @@ func main() {
 		// Register application specific css assets here
 		goui.PrependAsset("src/ui/styles.css", AssetTypeCSS)
 
-		goui.OnMessage("add", func(message []byte) {
-			var args map[string]uint
-			json.Unmarshal(message, &args)
-
-			val1 := args["val1"]
-			val2 := args["val2"]
-
-			goui.Send("add", val1+val2)
-		})
-
-		goui.OnMessage("getIncText", func(message []byte) {
-			var args map[string]uint
-			json.Unmarshal(message, &args)
-
-			val1 := args["val1"]
-			val2 := args["val2"]
-			result := fmt.Sprintf("Incremented %d by %d", val1, val2)
-
-			goui.Send("getIncText", result)
-		})
-
 		// Register application specific initialization module last
 		goui.AppendAsset("src/ui/app.js", AssetTypeJS)
+	})
+}
+
+func registerMessageHandlers(goui GoUI) {
+	goui.OnMessage("add", func(message []byte) {
+		var args map[string]uint
+		json.Unmarshal(message, &args)
+
+		val1 := args["val1"]
+		val2 := args["val2"]
+
+		goui.Send("add", val1+val2)
+	})
+
+	goui.OnMessage("getIncText", func(message []byte) {
+		var args map[string]uint
+		json.Unmarshal(message, &args)
+
+		val1 := args["val1"]
+		val2 := args["val2"]
+		result := fmt.Sprintf("Incremented %d by %d", val1, val2)
+
+		goui.Send("getIncText", result)
 	})
 }

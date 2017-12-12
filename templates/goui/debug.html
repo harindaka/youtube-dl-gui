@@ -23,7 +23,7 @@
 						console.log('Websocket connection opened successfully');
 						
 						//emulating call to js.send from app logic
-						goui.send("test", JSON.stringify({ test: "test" }));
+						goui.send("test", { test: "test" });
 					};
 					ws.onmessage = function (e) {
 						console.log(e);
