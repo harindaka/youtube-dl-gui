@@ -15,8 +15,7 @@ import (
 
 var webviewTask = make(chan interface{})
 var isDebugging = false
-var am = newAssetManager()
-var w webview.WebView
+var goui GoUI
 
 func main() {
 	//Hack to keep the dependency github.com/jteeuwen/go-bindata in vendor folder
@@ -57,7 +56,7 @@ func main() {
 }
 
 func launchWebview() {
-	w = webview.New(webview.Settings{
+	w := webview.New(webview.Settings{
 		Title:     "Youtube Downloader", // + uiFrameworkName,
 		Resizable: true,
 		Debug:     isDebugging,
@@ -66,22 +65,21 @@ func launchWebview() {
 	})
 	defer w.Exit()
 
-	w.Dispatch(func() {
+	goui = newGoUI(w)
 
+	w.Dispatch(func() {
 		// Register ui libraries here (js + css)
-		am.prependAsset(w, "lib/bootstrap/bootstrap.min.css", AssetTypeCSS)
-		am.prependAsset(w, "lib/vue/vue.js", AssetTypeJS)
+		goui.PrependAsset("lib/bootstrap/bootstrap.min.css", AssetTypeCSS)
+		goui.PrependAsset("lib/vue/vue.js", AssetTypeJS)
 
 		// Register application specific css assets here
 		//w.InjectCSS(string(MustAsset("src/ui/styles.css")))
-		am.prependAsset(w, "src/ui/styles.css", AssetTypeCSS)
+		goui.PrependAsset("src/ui/styles.css", AssetTypeCSS)
 
 		// Register application specific utils here
 		//w.Bind("counter", &Counter{})
 		//counter := plugins.NewCounter()
 		//w.Bind("counter", &Counter{})
-
-		goui := newGoUI()
 
 		goui.OnMessage("add", func(message []byte) {
 			var args map[string]uint
@@ -90,7 +88,7 @@ func launchWebview() {
 			val1 := args["val1"]
 			val2 := args["val2"]
 
-			goui.Send(w, "add", val1+val2)
+			goui.Send("add", val1+val2)
 		})
 
 		goui.OnMessage("getIncText", func(message []byte) {
@@ -101,7 +99,7 @@ func launchWebview() {
 			val2 := args["val2"]
 			result := fmt.Sprintf("Incremented %d by %d", val1, val2)
 
-			goui.Send(w, "getIncText", result)
+			goui.Send("getIncText", result)
 		})
 
 		w.Bind("goui", &goui)
@@ -129,10 +127,8 @@ func launchWebview() {
 			}
 		`)
 
-		//w.Eval("window.plugins = plugins.data;")
-
 		// Register application specific initialization module last
-		am.appendAsset(w, "src/ui/app.js", AssetTypeJS)
+		goui.AppendAsset("src/ui/app.js", AssetTypeJS)
 	})
 	w.Run()
 }
@@ -147,7 +143,7 @@ func launchFileServer(port uint) {
 		w.Write([]byte("<html>\n"))
 		w.Write([]byte("<head>\n"))
 
-		am.forEachPrependAsset(func(assetPath string, assetType string) {
+		goui.ForEachPrependAsset(func(assetPath string, assetType string) {
 			markup := fmt.Sprintf(assetType, assetPath)
 			markup = fmt.Sprintf("%s\n", markup)
 			w.Write([]byte(markup))
@@ -158,7 +154,7 @@ func launchFileServer(port uint) {
 		w.Write([]byte("<body>\n"))
 		w.Write([]byte("<div id=\"app\"></div>\n"))
 
-		am.forEachAppendAsset(func(assetPath string, assetType string) {
+		goui.ForEachAppendAsset(func(assetPath string, assetType string) {
 			markup := fmt.Sprintf(assetType, assetPath)
 			markup = fmt.Sprintf("%s\n", markup)
 			w.Write([]byte(markup))
