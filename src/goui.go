@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"strings"
+	"text/template"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/gorilla/websocket"
@@ -19,15 +19,17 @@ type message struct {
 	message     interface{}
 }
 
-type debugHTMLTemplateModel struct {
-	port          uint
-	prependAssets []uiAsset
-	appendAssets  []uiAsset
+//DebugHTMLTemplateModel is the debug html template model
+type DebugHTMLTemplateModel struct {
+	Port          uint
+	PrependAssets []UIAsset
+	AppendAssets  []UIAsset
 }
 
-type uiAsset struct {
-	assetPath string
-	assetLink string
+//UIAsset is the model for a ui asset
+type UIAsset struct {
+	AssetPath string
+	AssetLink string
 }
 
 //GoUI plugin
@@ -87,11 +89,11 @@ func templateFromFile(templatePath string) *template.Template {
 }
 
 func (g *GoUI) generateDebugHTML(port uint) string {
-	t := templateFromFile("src/templates/goui/debug.html")
-	model := debugHTMLTemplateModel{
-		port:          port,
-		appendAssets:  assetsToArray(g.appendAssets, g.appendAssetsIndex),
-		prependAssets: assetsToArray(g.prependAssets, g.prependAssetsIndex),
+	t := templateFromFile("templates/goui/debug.html")
+	model := DebugHTMLTemplateModel{
+		Port:          port,
+		AppendAssets:  assetsToArray(g.appendAssets, g.appendAssetsIndex),
+		PrependAssets: assetsToArray(g.prependAssets, g.prependAssetsIndex),
 	}
 
 	var parsedBytes bytes.Buffer
@@ -208,14 +210,14 @@ func (g *GoUI) GetGoUIJS() string {
 	return js
 }
 
-func assetsToArray(assets map[string]string, index []string) []uiAsset {
-	var assetsArray []uiAsset
+func assetsToArray(assets map[string]string, index []string) []UIAsset {
+	var assetsArray []UIAsset
 
 	for _, assetPath := range index {
 		assetType := assets[assetPath]
-		assetsArray = append(assetsArray, uiAsset{
-			assetPath: assetPath,
-			assetLink: fmt.Sprintf(assetType, assetPath),
+		assetsArray = append(assetsArray, UIAsset{
+			AssetPath: assetPath,
+			AssetLink: fmt.Sprintf(assetType, assetPath),
 		})
 	}
 
