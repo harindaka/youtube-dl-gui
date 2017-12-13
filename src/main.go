@@ -23,7 +23,7 @@ func main() {
 	registerMessageHandlers(goui)
 
 	goui.DevServerPort = 3030
-	goui.Start(StartModeDevServer, registerAssets)
+	goui.Start(StartModeApplication, registerAssets)
 }
 
 func registerAssets(goui *GoUI) {

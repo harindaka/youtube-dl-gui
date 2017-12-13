@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+go-bindata -debug -o src/bindata.go lib/... src/ui/...
+# go build -ldflags="-H windowsgui" -o src/bindata.go lib/... src/ui/...
+go build -o ./bin/youtube-dl-gui ./src
