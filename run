@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+
+./build
+./bin/youtube-dl-gui

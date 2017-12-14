@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+
+if [ -z ${GOPATH+x} ]; then echo "The GOPATH environment variable is not set. Please set it and try again"; exit 1; fi
+
+command -v dep >/dev/null 2>&1 || { 
+    echo >&2 "The go dependency management tool 'dep' is not installed. Please install it globally and try again."; 
+    echo "i.e. go get -u github.com/golang/dep/cmd/dep"
+    echo "Tip: Do not forget to add \$GOPATH/bin to PATH afterwards."
+    exit 1;
+}
+
+command -v go-bindata >/dev/null 2>&1 || { 
+    echo >&2 "The go-bindata command is not installed. Please install it globally and try again."; 
+    echo "i.e. go get -u github.com/jteeuwen/go-bindata/..."
+    echo "Tip: Do not forget to add \$GOPATH/bin to PATH afterwards."
+    exit 1;
+}
+
+dep ensure
