@@ -32,7 +32,7 @@ type UIAsset struct {
 type GoUI struct {
 	DevServerPort uint
 
-	messageHandlers map[string]func([]byte)
+	messageHandlers map[string]func([]byte, func(string, interface{}))
 	wv              webview.WebView
 	wvSettings      webview.Settings
 	startMode       bool
@@ -48,7 +48,7 @@ func newGoUI(s webview.Settings) GoUI {
 	return GoUI{
 		DevServerPort: 3030,
 
-		messageHandlers: make(map[string]func([]byte)),
+		messageHandlers: make(map[string]func([]byte, func(string, interface{}))),
 		wvSettings:      s,
 		startMode:       StartModeApplication,
 
@@ -157,10 +157,16 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 
 				var fieldExists bool
 				var messageType string
+				var callbackId string
 				var stringifiedMessage string
 				messageType, fieldExists = wsMessage["messageType"]
 				if !fieldExists {
 					panic(fmt.Sprintf("No messageType field found in received websocket message: %s", string(messageBuffer)))
+				}
+
+				callbackId, fieldExists = wsMessage["callbackId"]
+				if !fieldExists {
+					panic(fmt.Sprintf("No callbackId field found in received websocket message: %s", string(messageBuffer)))
 				}
 
 				stringifiedMessage, fieldExists = wsMessage["stringifiedMessage"]
@@ -170,7 +176,7 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 
 				fmt.Println("Received message: " + stringifiedMessage)
 
-				g.InvokeGoMessageHandler(messageType, stringifiedMessage)
+				g.InvokeGoMessageHandler(messageType, stringifiedMessage, callbackId)
 			}
 		}
 
@@ -241,20 +247,22 @@ func assetsToArray(assets map[string]string, index []string) []UIAsset {
 }
 
 //OnMessage registers a message handler
-func (g *GoUI) OnMessage(messageType string, messageHandler func([]byte)) {
+func (g *GoUI) OnMessage(messageType string, messageHandler func([]byte, func(string, interface{}))) {
 	g.messageHandlers[messageType] = messageHandler
 }
 
 //InvokeGoMessageHandler triggers the message handler
-func (g *GoUI) InvokeGoMessageHandler(messageType string, message string) {
+func (g *GoUI) InvokeGoMessageHandler(messageType string, message string, callbackID string) {
 	handler, ok := g.messageHandlers[messageType]
 	if ok {
-		handler([]byte(message))
+		handler([]byte(message), func(messageType string, message interface{}) {
+			g.send(messageType, message, callbackID)
+		})
 	}
 }
 
 //Send sends a message
-func (g *GoUI) Send(messageType string, message interface{}) error {
+func (g *GoUI) send(messageType string, message interface{}, callbackID string) error {
 	var serializedMessage []byte
 	var err error
 	if message != nil {
@@ -266,8 +274,12 @@ func (g *GoUI) Send(messageType string, message interface{}) error {
 		serializedMessage = []byte("")
 	}
 
-	js := fmt.Sprintf("goui.invokeJsMessageHandler(%s, %s);", toJsString(messageType), toJsString(string(serializedMessage)))
-	g.wv.Eval(js)
+	if g.startMode == StartModeApplication {
+		js := fmt.Sprintf("goui.invokeJsMessageHandler(%s, %s, %s);", toJsString(messageType), toJsString(string(serializedMessage)), toJsString(callbackID))
+		g.wv.Eval(js)
+	} else {
+		//todo: send message with messageType and callbackid
+	}
 
 	return nil
 }
