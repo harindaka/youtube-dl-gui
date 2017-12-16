@@ -32,9 +32,7 @@
 					ws.onclose = function () {
 						location.reload();
 					};
-				}
-
-				
+				}				
 
 				ws.onmessage = function(m){
 					goui.invokeJsMessageHandler(m.messageType, m.message)
