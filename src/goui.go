@@ -192,7 +192,7 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 
 func (g *GoUI) awaitIncomingWSMessage(con *websocket.Conn) {
 	for wsMessage := range g.wsChannel {
-		g.invokeGoMessageHandlerCore(wsMessage.MessageType, wsMessage.StringifiedMessage, wsMessage.CallbackID, con)
+		g.jsToGoCore(wsMessage.MessageType, wsMessage.StringifiedMessage, wsMessage.CallbackID, con)
 	}
 }
 
@@ -261,12 +261,12 @@ func (g *GoUI) OnMessage(messageType string, messageHandler func([]byte, func(st
 	g.messageHandlers[messageType] = messageHandler
 }
 
-//InvokeGoMessageHandler triggers the message handler
-func (g *GoUI) InvokeGoMessageHandler(messageType string, message string, callbackID string) {
-	g.invokeGoMessageHandlerCore(messageType, message, callbackID, nil)
+//JsToGo triggers the message handler
+func (g *GoUI) JsToGo(messageType string, message string, callbackID string) {
+	g.jsToGoCore(messageType, message, callbackID, nil)
 }
 
-func (g *GoUI) invokeGoMessageHandlerCore(messageType string, message string, callbackID string, con *websocket.Conn) {
+func (g *GoUI) jsToGoCore(messageType string, message string, callbackID string, con *websocket.Conn) {
 	handler, ok := g.messageHandlers[messageType]
 	if ok {
 		handler([]byte(message), func(messageType string, message interface{}) {
@@ -282,7 +282,7 @@ func (g *GoUI) invokeGoMessageHandlerCore(messageType string, message string, ca
 
 func (g *GoUI) send(messageType string, stringifiedMessage string, callbackID string, con *websocket.Conn) error {
 	if g.startMode == StartModeApplication {
-		js := fmt.Sprintf("goui.invokeJsMessageHandler(%s, %s, %s);", toJsString(messageType), toJsString(string(stringifiedMessage)), toJsString(callbackID))
+		js := fmt.Sprintf("goui.goToJs(%s, %s, %s);", toJsString(messageType), toJsString(string(stringifiedMessage)), toJsString(callbackID))
 		g.wv.Eval(js)
 	} else {
 		w := WSMessage{
@@ -310,58 +310,3 @@ func toJsString(s string) string {
 	s = strings.Replace(s, "'", "\\'", -1)
 	return fmt.Sprintf("'%s'", s)
 }
-
-//nativeResult sends a message
-// func nativeResult(result interface{}) {
-// 	jsMethodName := toLowerCamelCase(getCallingFunctionName())
-
-// 	var js string
-// 	stringResult, isString := result.(string)
-
-// 	if isString {
-// 		stringResult = strings.Replace(stringResult, "\\", "\\\\", -1)
-// 		stringResult = strings.Replace(stringResult, "'", "\\'", -1)
-// 		js = fmt.Sprintf("goui.invokeJsMessageHandler('%s', %s);", jsMethodName, fmt.Sprintf("'%s'", stringResult))
-// 	} else if reflect.TypeOf(result).Kind() == reflect.Struct {
-// 		js = fmt.Sprintf("goui.invokeJsMessageHandler('%s', %v);", jsMethodName, result)
-// 	} else {
-// 		js = fmt.Sprintf("goui.invokeJsMessageHandler('%s', %v);", jsMethodName, result)
-// 	}
-
-// 	w.Eval(js)
-// }
-
-// func toLowerCamelCase(s string) string {
-// 	if s == "" {
-// 		return ""
-// 	}
-// 	r, n := utf8.DecodeRuneInString(s)
-// 	return string(unicode.ToLower(r)) + s[n:]
-// }
-
-// func getCallingFunctionName() string {
-
-// 	// we get the callers as uintptrs - but we just need 1
-// 	fpcs := make([]uintptr, 1)
-
-// 	// skip 3 levels to get to the caller of whoever called Caller()
-// 	n := runtime.Callers(3, fpcs)
-// 	if n == 0 {
-// 		panic("Failed to determine the calling function")
-// 	}
-
-// 	// get the info of the actual function that's in the pointer
-// 	fun := runtime.FuncForPC(fpcs[0] - 1)
-// 	if fun == nil {
-// 		panic("Failed to obtain details of calling function")
-// 	}
-
-// 	// return its name
-// 	callingFuncName := fun.Name()
-// 	lastDotCharIndex := strings.LastIndex(callingFuncName, ".")
-// 	if lastDotCharIndex >= 0 {
-// 		return callingFuncName[lastDotCharIndex+1 : len(callingFuncName)]
-// 	}
-
-// 	return callingFuncName
-// }
