@@ -9,7 +9,7 @@ var vm = new Vue({
 
   },
   methods: {
-    increment: function() {  
+    increment: function() {        
       var vm = this;    
       var prevVal = this.counterVal; 
       goui.send("add", {

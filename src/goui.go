@@ -85,7 +85,7 @@ func (g *GoUI) Start(startMode bool, registerAssets func(*GoUI)) {
 		defer g.wv.Exit()
 
 		g.wv.Dispatch(func() {
-			g.wv.Bind("goui", g)
+			g.wv.Bind("goui", &g)
 			g.wv.Eval(g.getGoUIJS())
 
 			registerAssets(g)

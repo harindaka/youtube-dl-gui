@@ -23,7 +23,7 @@ func main() {
 	registerMessageHandlers(goui)
 
 	goui.DevServerPort = 3030
-	goui.Start(StartModeDevServer, registerAssets)
+	goui.Start(StartModeApplication, registerAssets)
 }
 
 func registerAssets(goui *GoUI) {
@@ -39,17 +39,17 @@ func registerAssets(goui *GoUI) {
 }
 
 func registerMessageHandlers(goui GoUI) {
-	goui.OnMessage("add", func(message []byte, done func(string, interface{})) {
+	goui.OnMessage("add", func(message []byte, send func(string, interface{})) {
 		var args map[string]uint
 		json.Unmarshal(message, &args)
 
 		val1 := args["val1"]
 		val2 := args["val2"]
 
-		done("add", val1+val2)
+		send("add", val1+val2)
 	})
 
-	goui.OnMessage("getIncText", func(message []byte, done func(string, interface{})) {
+	goui.OnMessage("getIncText", func(message []byte, send func(string, interface{})) {
 		var args map[string]uint
 		json.Unmarshal(message, &args)
 
@@ -57,6 +57,6 @@ func registerMessageHandlers(goui GoUI) {
 		val2 := args["val2"]
 		result := fmt.Sprintf("Incremented %d by %d", val1, val2)
 
-		done("getIncText", result)
+		send("getIncText", result)
 	})
 }
