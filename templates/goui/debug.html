@@ -21,7 +21,7 @@
 					}
 
 					ws.onopen = function() {
-						console.log('Websocket connection to dev server opened successfully');
+						console.log('Websocket connection to the goui dev server opened successfully');
 					};
 					ws.onmessage = function (m) {
 						var wsMessage = JSON.parse(m.data);
