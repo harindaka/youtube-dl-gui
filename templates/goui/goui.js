@@ -1,8 +1,8 @@
 (function(){
-    // if(!window.goui){
-    //     window.goui = {}
-    // }
-
+    if(!window.goui){
+        window.goui = {}
+    }
+    
     goui.messageHandlers = {};
     goui.onMessage = function(messageType, messageHandler){
         goui.messageHandlers[messageType] = messageHandler;
@@ -37,19 +37,13 @@
             goui.messageHandlers[messageType][callbackId] = callback;
         }
 
-        
-
-
-    var res = [];
-    for(var m in goui) {
-        if(typeof goui[m] == "function") {
-            res.push(m)
+        var res = [];
+        for(var m in goui) {
+            if(typeof goui[m] == "function") {
+                res.push(m)
+            }
         }
-    }
-    alert(res);
-
-
-
+        alert(res);
 
         goui.invokeGoMessageHandler(messageType, stringifiedMessage, callbackId);        
     }
