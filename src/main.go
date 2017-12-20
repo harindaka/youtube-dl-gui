@@ -5,17 +5,15 @@ import (
 	"fmt"
 
 	bindata "github.com/jteeuwen/go-bindata"
-	"github.com/zserge/webview"
 )
 
 func main() {
 	//Hack to keep the dependency github.com/jteeuwen/go-bindata in vendor folder
 	var _ = bindata.NewConfig
 
-	goui := newGoUI(webview.Settings{
+	goui := NewGoUIApplication(WindowSettings{
 		Title:     "Youtube Downloader", // + uiFrameworkName,
 		Resizable: true,
-		Debug:     true,
 		Height:    768,
 		Width:     1024,
 	})
@@ -23,7 +21,7 @@ func main() {
 	registerMessageHandlers(goui)
 
 	goui.DevServerPort = 3030
-	goui.Start(StartModeDevServer, registerAssets)
+	goui.Start(StartModeApplication, registerAssets)
 }
 
 func registerAssets(goui *GoUI) {

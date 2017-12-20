@@ -34,12 +34,25 @@ type UIAsset struct {
 	AssetLink string
 }
 
+//WindowSettings represents the settings for the goui window
+type WindowSettings struct {
+	// WebView main window title
+	Title string
+	// URL to open in a webview
+	URL string
+	// Window width in pixels
+	Width int
+	// Window height in pixels
+	Height int
+	// Allows/disallows window resizing
+	Resizable bool
+}
+
 //GoUI plugin
 type GoUI struct {
 	DevServerPort uint
 
 	messageHandlers map[string]func([]byte, func(string, interface{}))
-	wsChannel       chan WSMessage
 
 	wv         webview.WebView
 	wvSettings webview.Settings
@@ -52,15 +65,20 @@ type GoUI struct {
 }
 
 //NewNative creates a new Counter plugin
-func newGoUI(s webview.Settings) GoUI {
+func NewGoUIApplication(w WindowSettings) GoUI {
 	return GoUI{
 		DevServerPort: 3030,
 
 		messageHandlers: make(map[string]func([]byte, func(string, interface{}))),
-		wsChannel:       make(chan WSMessage),
 
-		wvSettings: s,
-		startMode:  StartModeApplication,
+		wvSettings: webview.Settings{
+			Title:     w.Title,
+			URL:       w.URL,
+			Width:     w.Width,
+			Height:    w.Height,
+			Resizable: w.Resizable,
+		},
+		startMode: StartModeApplication,
 
 		prependAssets: make(map[string]string),
 		appendAssets:  make(map[string]string),
@@ -145,7 +163,6 @@ func (g *GoUI) startDevServer() {
 		}
 
 		go g.listenWS(con)
-		g.awaitIncomingWSMessage(con)
 	})
 
 	g.listenHTTP()
@@ -164,7 +181,8 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 	for {
 		wsMessageType, messageBuffer, err := con.ReadMessage()
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
+			break
 		} else {
 			if wsMessageType == websocket.TextMessage {
 				var w WSMessage
@@ -184,15 +202,9 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 
 				fmt.Println("Received message:", w.StringifiedMessage)
 
-				g.wsChannel <- w
+				g.jsToGoCore(w.MessageType, w.StringifiedMessage, w.CallbackID, con)
 			}
 		}
-	}
-}
-
-func (g *GoUI) awaitIncomingWSMessage(con *websocket.Conn) {
-	for wsMessage := range g.wsChannel {
-		g.jsToGoCore(wsMessage.MessageType, wsMessage.StringifiedMessage, wsMessage.CallbackID, con)
 	}
 }
 
