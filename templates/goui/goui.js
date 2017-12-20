@@ -30,7 +30,7 @@
             }
 
             var callbackId = uuidv4();
-            while(!goui.messageHandlers[messageType][callbackId]){
+            while(goui.messageHandlers[messageType][callbackId]){
                 callbackId = uuidv4();
             }
 

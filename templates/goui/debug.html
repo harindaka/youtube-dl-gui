@@ -11,10 +11,11 @@
 					var ws = new WebSocket('ws://localhost:{{ .DevServerPort }}/websocket');
 				
 					//override goui.invokeGoMessageHandler to point to dev server
-					goui.invokeGoMessageHandler = function(messageType, stringifiedMessage){						
+					goui.invokeGoMessageHandler = function(messageType, stringifiedMessage, callbackId){						
 						var wsMessage = {
 							messageType: messageType,
-							stringifiedMessage: stringifiedMessage
+							stringifiedMessage: stringifiedMessage,
+							callbackId: callbackId
 						};
 						ws.send(JSON.stringify(wsMessage));
 					}
@@ -23,24 +24,16 @@
 						console.log('Websocket connection opened successfully');
 						
 						//emulating call to js.send from app logic
-						goui.send("test", { test: "test" });
+						//goui.send("test", { test: "test" });
 					};
-					ws.onmessage = function (e) {
-						console.log(e);
-						//ws.send(JSON.stringify({ test: "test" }));
+					ws.onmessage = function (m) {
+						var wsMessage = JSON.parse(m.data);
+						goui.invokeJsMessageHandler(wsMessage.messageType, wsMessage.stringifiedMessage, wsMessage.callbackId);
 					};
 					ws.onclose = function () {
 						location.reload();
 					};
-				}				
-
-				ws.onmessage = function(m){
-					goui.invokeJsMessageHandler(m.messageType, m.message)
-				};
-
-				ws.onclose = function(){
-					location.reload();
-				};
+				}
 			})();
 		</script>
 

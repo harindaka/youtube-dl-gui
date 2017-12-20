@@ -15,7 +15,6 @@ import (
 
 //WSMessage represents a Websocket Message
 type WSMessage struct {
-	con                *websocket.Conn
 	MessageType        string `json:"messageType"`
 	StringifiedMessage string `json:"stringifiedMessage"`
 	CallbackID         string `json:"callbackId"`
@@ -146,11 +145,10 @@ func (g *GoUI) startDevServer() {
 		}
 
 		go g.listenWS(con)
+		g.awaitIncomingWSMessage(con)
 	})
 
-	go g.listenHTTP()
-
-	g.awaitIncomingWSMessage()
+	g.listenHTTP()
 }
 
 func (g *GoUI) listenHTTP() {
@@ -166,13 +164,11 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 	for {
 		wsMessageType, messageBuffer, err := con.ReadMessage()
 		if err != nil {
-			fmt.Println(err)
+			panic(err)
 		} else {
 			if wsMessageType == websocket.TextMessage {
 				var w WSMessage
 				json.Unmarshal(messageBuffer, &w)
-
-				var stringifiedMessage string
 
 				if w.MessageType == "" {
 					panic(fmt.Sprintf("Invalid messageType field in received websocket message: %s", string(messageBuffer)))
@@ -186,7 +182,7 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 					panic(fmt.Sprintf("No stringifiedMessage field found in received websocket message: %s", string(messageBuffer)))
 				}
 
-				fmt.Println("Received message: " + stringifiedMessage)
+				fmt.Println("Received message:", w.StringifiedMessage)
 
 				g.wsChannel <- w
 			}
@@ -194,9 +190,9 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 	}
 }
 
-func (g *GoUI) awaitIncomingWSMessage() {
+func (g *GoUI) awaitIncomingWSMessage(con *websocket.Conn) {
 	for wsMessage := range g.wsChannel {
-		g.InvokeGoMessageHandler(wsMessage.MessageType, wsMessage.StringifiedMessage, wsMessage.CallbackID, wsMessage.con)
+		g.invokeGoMessageHandlerCore(wsMessage.MessageType, wsMessage.StringifiedMessage, wsMessage.CallbackID, con)
 	}
 }
 
@@ -266,7 +262,11 @@ func (g *GoUI) OnMessage(messageType string, messageHandler func([]byte, func(st
 }
 
 //InvokeGoMessageHandler triggers the message handler
-func (g *GoUI) InvokeGoMessageHandler(messageType string, message string, callbackID string, con *websocket.Conn) {
+func (g *GoUI) InvokeGoMessageHandler(messageType string, message string, callbackID string) {
+	g.invokeGoMessageHandlerCore(messageType, message, callbackID, nil)
+}
+
+func (g *GoUI) invokeGoMessageHandlerCore(messageType string, message string, callbackID string, con *websocket.Conn) {
 	handler, ok := g.messageHandlers[messageType]
 	if ok {
 		handler([]byte(message), func(messageType string, message interface{}) {
@@ -285,7 +285,6 @@ func (g *GoUI) send(messageType string, stringifiedMessage string, callbackID st
 		js := fmt.Sprintf("goui.invokeJsMessageHandler(%s, %s, %s);", toJsString(messageType), toJsString(string(stringifiedMessage)), toJsString(callbackID))
 		g.wv.Eval(js)
 	} else {
-		//todo: send message with messageType and callbackid
 		w := WSMessage{
 			MessageType:        messageType,
 			StringifiedMessage: stringifiedMessage,
@@ -297,8 +296,9 @@ func (g *GoUI) send(messageType string, stringifiedMessage string, callbackID st
 			panic(jsonErr)
 		}
 
+		fmt.Println("Sending message: ", w.StringifiedMessage)
 		if wsErr := con.WriteMessage(websocket.TextMessage, messageBuffer); wsErr != nil {
-			fmt.Println(wsErr)
+			panic(wsErr)
 		}
 	}
 

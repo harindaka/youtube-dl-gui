@@ -6,26 +6,24 @@ var vm = new Vue({
     incrementText: ""
   },
   created: function() {
-    var vm = this;
-    goui.onMessage("add", function(message){
-      vm.counterVal = parseInt(message);
-    });
 
-    goui.onMessage("getIncText", function(message){
-      vm.incrementText = message;
-    });
   },
   methods: {
-    increment: function() {      
-      var prevVal = this.counterVal 
+    increment: function() {  
+      var vm = this;    
+      var prevVal = this.counterVal; 
       goui.send("add", {
         val1: this.counterVal, 
         val2: 1
+      }, function(result){
+        vm.counterVal = parseInt(result);
       });
       
       goui.send("getIncText", {
         val1: prevVal, 
         val2:1
+      }, function(result){
+        vm.incrementText = result;
       });      
     },
   }
