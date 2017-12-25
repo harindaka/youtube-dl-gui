@@ -247,14 +247,14 @@ func (g *GoUI) AppendHTMLTemplate(assetPath string, id string) {
 	assetContent := string(MustAsset(assetPath))
 
 	if g.startMode == StartModeApplication {
-		// js := fmt.Sprintf(`
-		// 	(function(){
-		// 		var templateHtml = goui.toES5MultilineString(function() {/**
-		// 			%s
-		// 		**/});
-		// 		goui.appendHtmlTemplate(%s, templateHtml);
-		// 	})();`, assetContent, toJsString(id))
-		//g.wv.Eval(js)
+		js := fmt.Sprintf(`
+			(function(){
+				var templateHtml = goui.toES5MultilineString(function() {/**
+					%s
+				**/});
+				goui.appendHtmlTemplate(%s, templateHtml);
+			})();`, assetContent, toJsString(id))
+		g.wv.Eval(js)
 	}
 
 	g.appendAssets[assetPath] = fmt.Sprintf(assetTypeHTMLTemplate, id, assetContent)

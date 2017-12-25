@@ -37,8 +37,6 @@ func registerAssets(goui *GoUI) {
 
 	// Register application specific component js modules here
 	goui.AppendAsset("src/ui/app.js", AssetTypeJS)
-
-	goui.wv.Eval("document.body.appendChild(document.createElement('div', { id: 'app1' })); alert(document.body.innerText);")
 }
 
 func registerMessageHandlers(goui GoUI) {
