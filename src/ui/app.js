@@ -1,4 +1,4 @@
-alert(document.body.getElementsByTagName('div')[0].parentElement.outerHTML);
+//alert(document.body.getElementsByTagName('div')[0].parentElement.outerHTML);
 
 var vm = new Vue({
   el: '#app',
