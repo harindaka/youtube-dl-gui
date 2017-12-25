@@ -30,8 +30,8 @@ type DebugHTMLTemplateModel struct {
 
 //UIAsset is the model for a ui asset
 type UIAsset struct {
-	AssetPath string
-	AssetLink string
+	AssetPath      string
+	FormattedAsset string
 }
 
 //WindowSettings represents the settings for the goui window
@@ -64,7 +64,7 @@ type GoUI struct {
 	appendAssetsIndex  []string
 }
 
-//NewNative creates a new Counter plugin
+//NewGoUIApplication creates a new Counter plugin
 func NewGoUIApplication(w WindowSettings) GoUI {
 	return GoUI{
 		DevServerPort: 3030,
@@ -210,44 +210,71 @@ func (g *GoUI) listenWS(con *websocket.Conn) {
 
 //PrependAsset prepends an asset in the HTML header
 func (g *GoUI) PrependAsset(assetPath string, assetType string) {
+	formattedAsset := ""
+
 	switch assetType {
 	case AssetTypeJS:
-		g.evalAsset(assetPath)
+		formattedAsset = g.injectJSAsset(assetPath, assetType)
 	case AssetTypeCSS:
-		g.injectCSSAsset(assetPath)
+		formattedAsset = g.injectCSSAsset(assetPath, assetType)
 	default:
 		panic(fmt.Sprintf("Unsupported asset type specified: %s", assetType))
 	}
 
-	g.prependAssets[assetPath] = assetType
+	g.prependAssets[assetPath] = formattedAsset
 	g.prependAssetsIndex = append(g.prependAssetsIndex, assetPath)
 }
 
 //AppendAsset appends an asset in the HTML body
 func (g *GoUI) AppendAsset(assetPath string, assetType string) {
+	formattedAsset := ""
+
 	switch assetType {
 	case AssetTypeJS:
-		g.evalAsset(assetPath)
+		formattedAsset = g.injectJSAsset(assetPath, assetType)
 	case AssetTypeCSS:
-		g.injectCSSAsset(string(MustAsset(assetPath)))
+		formattedAsset = g.injectCSSAsset(assetPath, assetType)
 	default:
 		panic(fmt.Sprintf("Unsupported asset type specified: %s", assetType))
 	}
 
-	g.appendAssets[assetPath] = assetType
+	g.appendAssets[assetPath] = formattedAsset
 	g.appendAssetsIndex = append(g.appendAssetsIndex, assetPath)
 }
 
-func (g *GoUI) evalAsset(assetPath string) {
+//AppendHTMLTemplate appends a HTML Template
+func (g *GoUI) AppendHTMLTemplate(assetPath string, id string) {
+	assetContent := string(MustAsset(assetPath))
+
+	if g.startMode == StartModeApplication {
+		// js := fmt.Sprintf(`
+		// 	(function(){
+		// 		var templateHtml = goui.toES5MultilineString(function() {/**
+		// 			%s
+		// 		**/});
+		// 		goui.appendHtmlTemplate(%s, templateHtml);
+		// 	})();`, assetContent, toJsString(id))
+		//g.wv.Eval(js)
+	}
+
+	g.appendAssets[assetPath] = fmt.Sprintf(assetTypeHTMLTemplate, id, assetContent)
+	g.appendAssetsIndex = append(g.appendAssetsIndex, assetPath)
+}
+
+func (g *GoUI) injectJSAsset(assetPath string, assetType string) string {
 	if g.startMode == StartModeApplication {
 		g.wv.Eval(string(MustAsset(assetPath)))
 	}
+
+	return fmt.Sprintf(assetType, assetPath)
 }
 
-func (g *GoUI) injectCSSAsset(assetPath string) {
+func (g *GoUI) injectCSSAsset(assetPath string, assetType string) string {
 	if g.startMode == StartModeApplication {
 		g.wv.InjectCSS(string(MustAsset(assetPath)))
 	}
+
+	return fmt.Sprintf(assetType, assetPath)
 }
 
 func (g *GoUI) getGoUIJS() string {
@@ -258,10 +285,10 @@ func assetsToArray(assets map[string]string, index []string) []UIAsset {
 	var assetsArray []UIAsset
 
 	for _, assetPath := range index {
-		assetType := assets[assetPath]
+		formattedAsset := assets[assetPath]
 		assetsArray = append(assetsArray, UIAsset{
-			AssetPath: assetPath,
-			AssetLink: fmt.Sprintf(assetType, assetPath),
+			AssetPath:      assetPath,
+			FormattedAsset: formattedAsset,
 		})
 	}
 

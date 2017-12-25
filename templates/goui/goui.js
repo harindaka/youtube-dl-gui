@@ -2,8 +2,30 @@
     if(!window.goui){
         window.goui = {}
     }
+
+    goui.toES5MultilineString = function(f) {
+        return f.toString().split('\n').slice(1, -1).join('\n');
+    }
     
     goui.messageHandlers = {};
+    
+    goui.appendHtmlTemplate = function(id, templateHtml){        
+        // var el = document.createElement('script', {
+        //     type: 'text/x-template',
+        //     id: id
+        // });         
+        // el.innerHTML = templateHtml;        
+        // document.body.appendChild(el);
+
+        var el = document.createElement('script', {
+            id: id
+        });         
+        el.type = 'text/x-template';
+        el.innerHTML = templateHtml;        
+        //el.style.cssText = "display:none";        
+        document.body.appendChild(el);      
+    };
+
     goui.onMessage = function(messageType, messageHandler){
         goui.messageHandlers[messageType] = messageHandler;
     };

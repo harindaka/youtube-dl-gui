@@ -1,6 +1,6 @@
 var vm = new Vue({
   el: '#app',
-  template: '<div><div class="counter">{{ counterVal }}</div><button class="btn btn-primary" v-on:click="increment">Increment</button><div>{{ incrementText }}</div></div>',
+  template: '#counter-template',
   data: {
     counterVal: 0,
     incrementText: ""

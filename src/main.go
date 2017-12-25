@@ -21,7 +21,7 @@ func main() {
 	registerMessageHandlers(goui)
 
 	goui.DevServerPort = 3030
-	goui.Start(StartModeDevServer, registerAssets)
+	goui.Start(StartModeApplication, registerAssets)
 }
 
 func registerAssets(goui *GoUI) {
@@ -32,8 +32,13 @@ func registerAssets(goui *GoUI) {
 	// Register application specific css assets here
 	goui.PrependAsset("src/ui/styles.css", AssetTypeCSS)
 
-	// Register application specific initialization module last
+	// Register application specific component html templates here
+	goui.AppendHTMLTemplate("src/ui/counter/counter.template.html", "counter-template")
+
+	// Register application specific component js modules here
 	goui.AppendAsset("src/ui/app.js", AssetTypeJS)
+
+	goui.wv.Eval("document.body.appendChild(document.createElement('div', { id: 'app1' })); alert(document.body.innerText);")
 }
 
 func registerMessageHandlers(goui GoUI) {
