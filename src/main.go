@@ -34,6 +34,7 @@ func registerAssets(goui *GoUI) {
 
 	// Register application specific component html templates here
 	goui.AppendHTMLTemplate("src/ui/counter/counter.template.html", "counter-template")
+	goui.AppendHTMLTemplate("src/ui/home/home.template.html", "home-template")
 
 	// Register application specific component js modules here
 	goui.AppendAsset("src/ui/app.js", AssetTypeJS)
